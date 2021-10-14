@@ -12,6 +12,8 @@
 
 int boards = 0;
 
+//r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -  depth 4 =
+
 
 using namespace std;
 
@@ -27,8 +29,8 @@ const int white = 16;
 
 int turnColour = white;
 
-bool whiteKingMoved = true;
-bool blackKingMoved = true;
+bool whiteKingMoved = false;
+bool blackKingMoved = false;
 
 bool whiteKingRookMoved = false;
 bool whiteQueenRookMoved = false;
@@ -1177,11 +1179,9 @@ void updateSlidingMove(int rank, int file,int** board){
 }
 
 void updateUpMove(int rank, int file, int** board){
-  auto currTurnColour = turnColour;
   array<int,2> position = {rank,file};
   //white
   if(board[rank][file] > 16){
-    turnColour = white;
     auto it = find(whitePiecePos.begin(), whitePiecePos.end(), position);
     if(it == whitePiecePos.end()){
       cout << "log Error updateUpMove" << endl;
@@ -1191,7 +1191,7 @@ void updateUpMove(int rank, int file, int** board){
     int index = it - whitePiecePos.begin();
     std::vector<array<int,2>> pieceMoves = whiteMoves[index];
     for(int i = 0; i < pieceMoves.size();i++){
-      if(pieceMoves[i][0] > rank && pieceMoves[i][1] == file){
+      if(pieceMoves[i][0] >= rank && pieceMoves[i][1] == file){
         swap(pieceMoves[i],pieceMoves.back());
         pieceMoves.pop_back();
         i--;
@@ -1202,14 +1202,13 @@ void updateUpMove(int rank, int file, int** board){
       rank++;
     }
 
-    if(rank != 7  && ((board[rank+1][file] ^ turnColour) > board[rank+1][file])){
+    if(rank != 7  && ((board[rank+1][file] ^ white) > board[rank+1][file])){
       pieceMoves.push_back({rank+1,file});
     }
-
+    whiteMoves[index] = pieceMoves;
   }
   //black
   else{
-    turnColour = black;
     auto it = find(blackPiecePos.begin(), blackPiecePos.end(), position);
     if(it == blackPiecePos.end()){
       cout << "log Error updateUpMove" << endl;
@@ -1219,7 +1218,7 @@ void updateUpMove(int rank, int file, int** board){
     int index = it - blackPiecePos.begin();
     std::vector<array<int,2>> pieceMoves = blackMoves[index];
     for(int i = 0; i < pieceMoves.size();i++){
-      if(pieceMoves[i][0] > rank && pieceMoves[i][1] == file){
+      if(pieceMoves[i][0] >= rank && pieceMoves[i][1] == file){
         swap(pieceMoves[i],pieceMoves.back());
         pieceMoves.pop_back();
         i--;
@@ -1230,11 +1229,182 @@ void updateUpMove(int rank, int file, int** board){
       rank++;
     }
 
-    if(rank != 7  && ((board[rank+1][file] ^ turnColour) > board[rank+1][file])){
+    if(rank != 7  && ((board[rank+1][file] ^ black) > board[rank+1][file])){
       pieceMoves.push_back({rank+1,file});
     }
+    blackMoves[index] = pieceMoves;
   }
-  turnColour = currTurnColour;
+}
+void updateDownMove(int rank, int file, int** board){
+  array<int,2> position = {rank,file};
+  //white
+  if(board[rank][file] > 16){
+    auto it = find(whitePiecePos.begin(), whitePiecePos.end(), position);
+    if(it == whitePiecePos.end()){
+      cout << "log Error updateUpMove" << endl;
+      cout << rank << " " << file << endl;
+      sleep(100);
+    }
+    int index = it - whitePiecePos.begin();
+    std::vector<array<int,2>> pieceMoves = whiteMoves[index];
+    for(int i = 0; i < pieceMoves.size();i++){
+      if(pieceMoves[i][0] <= rank && pieceMoves[i][1] == file){
+        swap(pieceMoves[i],pieceMoves.back());
+        pieceMoves.pop_back();
+        i--;
+      }
+    }
+    while(rank != 0 && board[rank-1][file] == 0){
+      pieceMoves.push_back({rank-1,file});
+      rank--;
+    }
+
+    if(rank != 0  && ((board[rank-1][file] ^ white) > board[rank-1][file])){
+      pieceMoves.push_back({rank-1,file});
+    }
+    whiteMoves[index] = pieceMoves;
+  }
+  //black
+  else{
+    auto it = find(blackPiecePos.begin(), blackPiecePos.end(), position);
+    if(it == blackPiecePos.end()){
+      cout << "log Error updateUpMove" << endl;
+      cout << rank << " " << file << endl;
+      sleep(100);
+    }
+    int index = it - blackPiecePos.begin();
+    std::vector<array<int,2>> pieceMoves = blackMoves[index];
+    for(int i = 0; i < pieceMoves.size();i++){
+      if(pieceMoves[i][0] <= rank && pieceMoves[i][1] == file){
+        swap(pieceMoves[i],pieceMoves.back());
+        pieceMoves.pop_back();
+        i--;
+      }
+    }
+    while(rank != 0 && board[rank-1][file] == 0){
+      pieceMoves.push_back({rank-1,file});
+      rank--;
+    }
+
+    if(rank != 0  && ((board[rank-1][file] ^ black) > board[rank-1][file])){
+      pieceMoves.push_back({rank-1,file});
+    }
+    blackMoves[index] = pieceMoves;
+  }
+}
+void updateRightMove(int rank, int file, int** board){
+  array<int,2> position = {rank,file};
+  //white
+  if(board[rank][file] > 16){
+    auto it = find(whitePiecePos.begin(), whitePiecePos.end(), position);
+    if(it == whitePiecePos.end()){
+      cout << "log Error updateUpMove" << endl;
+      cout << rank << " " << file << endl;
+      sleep(100);
+    }
+    int index = it - whitePiecePos.begin();
+    std::vector<array<int,2>> pieceMoves = whiteMoves[index];
+    for(int i = 0; i < pieceMoves.size();i++){
+      if(pieceMoves[i][0] == rank && pieceMoves[i][1] <= file){
+        swap(pieceMoves[i],pieceMoves.back());
+        pieceMoves.pop_back();
+        i--;
+      }
+    }
+    while(file != 0  && board[rank][file-1] == 0){
+      pieceMoves.push_back({rank,file-1});
+      file--;
+    }
+
+    if(file != 0  && ((board[rank][file-1] ^ white) > board[rank][file-1])){
+      pieceMoves.push_back({rank,file-1});
+    }
+    whiteMoves[index] = pieceMoves;
+  }
+  //black
+  else{
+    auto it = find(blackPiecePos.begin(), blackPiecePos.end(), position);
+    if(it == blackPiecePos.end()){
+      cout << "log Error updateUpMove" << endl;
+      cout << rank << " " << file << endl;
+      sleep(100);
+    }
+    int index = it - blackPiecePos.begin();
+    std::vector<array<int,2>> pieceMoves = blackMoves[index];
+    for(int i = 0; i < pieceMoves.size();i++){
+      if(pieceMoves[i][0] == rank && pieceMoves[i][1] <= file){
+        swap(pieceMoves[i],pieceMoves.back());
+        pieceMoves.pop_back();
+        i--;
+      }
+    }
+    while(file != 0  && board[rank][file-1] == 0){
+      pieceMoves.push_back({rank,file-1});
+      file--;
+    }
+
+    if(file != 0  && ((board[rank][file-1] ^ black) > board[rank][file-1])){
+      pieceMoves.push_back({rank,file-1});
+    }
+    blackMoves[index] = pieceMoves;
+  }
+}
+void updateLeftMove(int rank, int file, int** board){
+  array<int,2> position = {rank,file};
+  //white
+  if(board[rank][file] > 16){
+    auto it = find(whitePiecePos.begin(), whitePiecePos.end(), position);
+    if(it == whitePiecePos.end()){
+      cout << "log Error updateUpMove" << endl;
+      cout << rank << " " << file << endl;
+      sleep(100);
+    }
+    int index = it - whitePiecePos.begin();
+    std::vector<array<int,2>> pieceMoves = whiteMoves[index];
+    for(int i = 0; i < pieceMoves.size();i++){
+      if(pieceMoves[i][0] == rank && pieceMoves[i][1] >= file){
+        swap(pieceMoves[i],pieceMoves.back());
+        pieceMoves.pop_back();
+        i--;
+      }
+    }
+    while(file != 7  && board[rank][file+1] == 0){
+      pieceMoves.push_back({rank,file+1});
+      file++;
+    }
+
+    if(file != 7  && ((board[rank][file+1] ^ white) > board[rank][file+1])){
+      pieceMoves.push_back({rank,file+1});
+    }
+    whiteMoves[index] = pieceMoves;
+  }
+  //black
+  else{
+    auto it = find(blackPiecePos.begin(), blackPiecePos.end(), position);
+    if(it == blackPiecePos.end()){
+      cout << "log Error updateUpMove" << endl;
+      cout << rank << " " << file << endl;
+      sleep(100);
+    }
+    int index = it - blackPiecePos.begin();
+    std::vector<array<int,2>> pieceMoves = blackMoves[index];
+    for(int i = 0; i < pieceMoves.size();i++){
+      if(pieceMoves[i][0] == rank && pieceMoves[i][1] >= file){
+        swap(pieceMoves[i],pieceMoves.back());
+        pieceMoves.pop_back();
+        i--;
+      }
+    }
+    while(file != 7  && board[rank][file+1] == 0){
+      pieceMoves.push_back({rank,file+1});
+      file++;
+    }
+
+    if(file != 7  && ((board[rank][file+1] ^ black) > board[rank][file+1])){
+      pieceMoves.push_back({rank,file+1});
+    }
+    blackMoves[index] = pieceMoves;
+  }
 }
 
 void updateSlidingMoves(array<int,2> initPos,array<int,2> endPos,int** board){
@@ -1261,7 +1431,7 @@ void updateSlidingMoves(array<int,2> initPos,array<int,2> endPos,int** board){
   if(actualRank == 3 && (abs(actualRank - rank) == 1) && board[rank-1][file] == 9){
     //updateSlidingMove(rank-1,file,board);
     updateSlidingMove(rank-1,file,board);
-    //updateUpMove(rank-1,file,board);
+    //updateSlidingMove(rank-1,file,board);
     alreadyUpdated.push_back({rank-1,file});
   }
   if(rank != 0  && (board[rank-1][file] % 8 == 5 || board[rank-1][file] % 8 == 6)){
@@ -1286,6 +1456,7 @@ void updateSlidingMoves(array<int,2> initPos,array<int,2> endPos,int** board){
     alreadyUpdated.push_back({rank+1,file});
   }
   if(rank != 7  && (board[rank+1][file] % 8 == 5 || board[rank+1][file] % 8 == 6)){
+    //updateSlidingMove(rank+1,file,board);
     updateSlidingMove(rank+1,file,board);
     alreadyUpdated.push_back({rank+1,file});
   }
@@ -1310,6 +1481,7 @@ void updateSlidingMoves(array<int,2> initPos,array<int,2> endPos,int** board){
   }
   if(file != 7  && (board[rank][file+1] % 8 == 5 || board[rank][file+1] % 8 == 6)){
     updateSlidingMove(rank, file+1,board);
+    //updateSlidingMove(rank,file+1,board);
     alreadyUpdated.push_back({rank,file+1});
   }
   file = actualFile;
@@ -1333,6 +1505,7 @@ void updateSlidingMoves(array<int,2> initPos,array<int,2> endPos,int** board){
   }
   if(file != 0  && (board[rank][file-1] % 8 == 5 || board[rank][file-1] % 8 == 6)){
     updateSlidingMove(rank,file-1,board);
+    //updateSlidingMove(rank,file-1,board);
     alreadyUpdated.push_back({rank,file-1});
   }
   file = actualFile;
@@ -1415,14 +1588,16 @@ void updateSlidingMoves(array<int,2> initPos,array<int,2> endPos,int** board){
     rank--;
   }
   tempArr = {rank-1,file};
-  if(rank != 0 && (actualRank == rank) && (board[rank-1][file] == 9 || board[rank-1][file] % 8 == 2) && !(find(alreadyUpdated.begin(), alreadyUpdated.end(), tempArr) != alreadyUpdated.end())){
+  if(rank != 0 && (actualRank == rank) && (board[rank-1][file] == 9 || board[rank-1][file] % 8 == 2)){
     updateSlidingMove(rank-1,file,board);
   }
-  if(actualRank == 3 && (abs(actualRank - rank) == 1) && board[rank-1][file] == 9 && !(find(alreadyUpdated.begin(), alreadyUpdated.end(), tempArr) != alreadyUpdated.end())){
+  if(actualRank == 3 && (abs(actualRank - rank) == 1) && board[rank-1][file] == 9){
     updateSlidingMove(rank-1,file,board);
   }
-  if(rank != 0  && (board[rank-1][file] % 8 == 5 || board[rank-1][file] % 8 == 6) && !(find(alreadyUpdated.begin(), alreadyUpdated.end(), tempArr) != alreadyUpdated.end())){
+  if(rank != 0  && (board[rank-1][file] % 8 == 5 || board[rank-1][file] % 8 == 6)){
+    //updateSlidingMove(rank-1,file,board);
     updateSlidingMove(rank-1,file,board);
+    //updateUpMove(rank-1,file,board);
   }
   file = actualFile;
   rank = actualRank;
@@ -1431,13 +1606,14 @@ void updateSlidingMoves(array<int,2> initPos,array<int,2> endPos,int** board){
     rank++;
   }
   tempArr = {rank+1,file};
-  if(rank != 7 && (actualRank == rank) && (board[rank+1][file] == 17 || board[rank+1][file] % 8 == 2) && !(find(alreadyUpdated.begin(), alreadyUpdated.end(), tempArr) != alreadyUpdated.end())){
+  if(rank != 7 && (actualRank == rank) && (board[rank+1][file] == 17 || board[rank+1][file] % 8 == 2)){
     updateSlidingMove(rank+1,file,board);
   }
-  if(actualRank == 4 && (abs(actualRank - rank) == 1) && board[rank+1][file] == 17 && !(find(alreadyUpdated.begin(), alreadyUpdated.end(), tempArr) != alreadyUpdated.end())){
+  if(actualRank == 4 && (abs(actualRank - rank) == 1) && board[rank+1][file] == 17){
     updateSlidingMove(rank+1,file,board);
   }
-  if(rank != 7  && (board[rank+1][file] % 8 == 5 || board[rank+1][file] % 8 == 6) && !(find(alreadyUpdated.begin(), alreadyUpdated.end(), tempArr) != alreadyUpdated.end())){
+  if(rank != 7  && (board[rank+1][file] % 8 == 5 || board[rank+1][file] % 8 == 6)){
+    //updateSlidingMove(rank+1,file,board);
     updateSlidingMove(rank+1,file,board);
     //auto it = find(whitePiecePos.begin(),whitePiecePos.end(),tempArr);
 
@@ -1450,11 +1626,12 @@ void updateSlidingMoves(array<int,2> initPos,array<int,2> endPos,int** board){
   }
   tempArr = {rank,file+1};
 
-  if(file != 7 && (actualFile == file) && (board[rank][file+1] % 8 == 2 || (rank == 4 && board[rank][file+1] == 9 && blackEnPaisant == file) || (rank == 3 && board[rank][file+1] == 17 && whiteEnPaisant == file)) && !(find(alreadyUpdated.begin(), alreadyUpdated.end(), tempArr) != alreadyUpdated.end())){
+  if(file != 7 && (actualFile == file) && (board[rank][file+1] % 8 == 2 || (rank == 4 && board[rank][file+1] == 9 && blackEnPaisant == file) || (rank == 3 && board[rank][file+1] == 17 && whiteEnPaisant == file))){
     updateSlidingMove(rank,file+1,board);
   }
-  if(file != 7  && (board[rank][file+1] % 8 == 5 || board[rank][file+1] % 8 == 6) && !(find(alreadyUpdated.begin(), alreadyUpdated.end(), tempArr) != alreadyUpdated.end())){
+  if(file != 7  && (board[rank][file+1] % 8 == 5 || board[rank][file+1] % 8 == 6)){
     updateSlidingMove(rank, file+1,board);
+    //updateSlidingMove(rank,file+1,board);
   }
   file = actualFile;
   rank = actualRank;
@@ -1463,10 +1640,10 @@ void updateSlidingMoves(array<int,2> initPos,array<int,2> endPos,int** board){
     file--;
   }
   tempArr = {rank,file-1};
-  if(file != 0 && (actualFile == file) && (board[rank][file-1] % 8 == 2 || (rank == 4 && board[rank][file-1]== 9 && blackEnPaisant == file) || (rank == 3 && board[rank][file-1]== 17 && whiteEnPaisant == file)) && !(find(alreadyUpdated.begin(), alreadyUpdated.end(), tempArr) != alreadyUpdated.end())){
+  if(file != 0 && (actualFile == file) && (board[rank][file-1] % 8 == 2 || (rank == 4 && board[rank][file-1]== 9 && blackEnPaisant == file) || (rank == 3 && board[rank][file-1]== 17 && whiteEnPaisant == file))){
     updateSlidingMove(rank,file-1,board);
   }
-  if(file != 0  && (board[rank][file-1] % 8 == 5 || board[rank][file-1] % 8 == 6) && !(find(alreadyUpdated.begin(), alreadyUpdated.end(), tempArr) != alreadyUpdated.end())){
+  if(file != 0  && (board[rank][file-1] % 8 == 5 || board[rank][file-1] % 8 == 6)){
     updateSlidingMove(rank,file-1,board);
   }
   file = actualFile;
@@ -1480,10 +1657,10 @@ void updateSlidingMoves(array<int,2> initPos,array<int,2> endPos,int** board){
     file++;
   }
   tempArr = {rank-1,file+1};
-  if(rank != 0 && file != 7 && (actualRank == rank) && (actualFile == file) && (board[rank-1][file+1] == 9 || board[rank-1][file+1] % 8 == 2) && !(find(alreadyUpdated.begin(), alreadyUpdated.end(), tempArr) != alreadyUpdated.end())){
+  if(rank != 0 && file != 7 && (actualRank == rank) && (actualFile == file) && (board[rank-1][file+1] == 9 || board[rank-1][file+1] % 8 == 2)){
     updateSlidingMove(rank-1,file+1,board);
   }
-  if(rank != 0 && file != 7 && (board[rank-1][file+1] % 8 == 4 || board[rank-1][file+1] % 8 == 6) && !(find(alreadyUpdated.begin(), alreadyUpdated.end(), tempArr) != alreadyUpdated.end())){
+  if(rank != 0 && file != 7 && (board[rank-1][file+1] % 8 == 4 || board[rank-1][file+1] % 8 == 6)){
     updateSlidingMove(rank-1,file+1,board);
   }
   file = actualFile;
@@ -1494,10 +1671,10 @@ void updateSlidingMoves(array<int,2> initPos,array<int,2> endPos,int** board){
     file++;
   }
   tempArr = {rank+1,file+1};
-  if(rank != 7 && file != 7 && (actualRank == rank) && (actualFile == file) && ((board[rank+1][file+1] == 17) || board[rank+1][file+1] % 8 == 2) && !(find(alreadyUpdated.begin(), alreadyUpdated.end(),tempArr) != alreadyUpdated.end())){
+  if(rank != 7 && file != 7 && (actualRank == rank) && (actualFile == file) && ((board[rank+1][file+1] == 17) || board[rank+1][file+1] % 8 == 2)){
     updateSlidingMove(rank+1,file+1,board);
   }
-  if(rank != 7 && file != 7 && (board[rank+1][file+1] % 8 == 4 || board[rank+1][file+1] % 8 == 6) && !(find(alreadyUpdated.begin(), alreadyUpdated.end(), tempArr) != alreadyUpdated.end())){
+  if(rank != 7 && file != 7 && (board[rank+1][file+1] % 8 == 4 || board[rank+1][file+1] % 8 == 6)){
     updateSlidingMove(rank+1,file+1,board);
   }
   file = actualFile;
@@ -1508,10 +1685,10 @@ void updateSlidingMoves(array<int,2> initPos,array<int,2> endPos,int** board){
     file--;
   }
   tempArr = {rank+1,file-1};
-  if(rank != 7 && file != 0 && (actualRank == rank) && (actualFile == file) && (board[rank+1][file-1] == 17 || board[rank+1][file-1] % 8 == 2) && !(find(alreadyUpdated.begin(), alreadyUpdated.end(), tempArr) != alreadyUpdated.end())){
+  if(rank != 7 && file != 0 && (actualRank == rank) && (actualFile == file) && (board[rank+1][file-1] == 17 || board[rank+1][file-1] % 8 == 2)){
     updateSlidingMove(rank+1,file-1,board);
   }
-  if(rank != 7 && file != 0 && (board[rank+1][file-1] % 8 == 4 || board[rank+1][file-1] % 8 == 6) && !(find(alreadyUpdated.begin(), alreadyUpdated.end(), tempArr) != alreadyUpdated.end())){
+  if(rank != 7 && file != 0 && (board[rank+1][file-1] % 8 == 4 || board[rank+1][file-1] % 8 == 6)){
     updateSlidingMove(rank+1,file-1,board);
   }
   file = actualFile;
@@ -1522,10 +1699,10 @@ void updateSlidingMoves(array<int,2> initPos,array<int,2> endPos,int** board){
     file--;
   }
   tempArr = {rank-1,file-1};
-  if(rank != 0 && file != 0 && (actualRank == rank) && (actualFile == file) && (board[rank-1][file-1] == 9 || board[rank-1][file-1] % 8 == 2) && !(find(alreadyUpdated.begin(), alreadyUpdated.end(), tempArr) != alreadyUpdated.end())){
+  if(rank != 0 && file != 0 && (actualRank == rank) && (actualFile == file) && (board[rank-1][file-1] == 9 || board[rank-1][file-1] % 8 == 2)){
     updateSlidingMove(rank-1,file-1,board);
   }
-  if(rank != 0 && file != 0 && (board[rank-1][file-1] % 8 == 4 || board[rank-1][file-1] % 8 == 6) && !(find(alreadyUpdated.begin(), alreadyUpdated.end(), tempArr) != alreadyUpdated.end())){
+  if(rank != 0 && file != 0 && (board[rank-1][file-1] % 8 == 4 || board[rank-1][file-1] % 8 == 6)){
     updateSlidingMove(rank-1,file-1,board);
   }
 }
@@ -2043,9 +2220,7 @@ bool applyTempMove(array<int,2> initPos, array<int,2> endPos, int** board){
   }
   //check square before castled square for check
   if(castling[0]){
-    cout << "copyBoard2" << endl;
     int** tempBoard = copyBoard(board);
-    cout << "copyBoard2" << endl;
     if(turnColour == white){
       //QS
       if(castling[1] == 1){
@@ -2349,14 +2524,13 @@ int generateMoves(int depth, int** board){
       castleProperties[5] = blackQueenRookMoved;
       EnPaisantProperties[0] = whiteEnPaisant;
       EnPaisantProperties[1] = blackEnPaisant;
-      /*
       if((board[piecePositons[i][0]][piecePositons[i][1]] % 8 == 1) && (possMoves[j][0] == 0 || possMoves[j][0] == 7)){
         bool promotable = false;
         if(applyTempMoveKnight(piecePositons[i],possMoves[j],board)){
           promotable = true;
-          int** tempBoard = copyBoard(board);
-          numPostions = generateMoves(depth-1, board, tempBoard) + numPostions;
-          deleteBoard(tempBoard);
+          //int** tempBoard = copyBoard(board);
+          numPostions = generateMoves(depth-1, board) + numPostions;
+          //deleteBoard(tempBoard);
         }
         whiteMoves = initialpieceMoves[0];
         blackMoves = initialpieceMoves[1];
@@ -2369,9 +2543,9 @@ int generateMoves(int depth, int** board){
         turnColour = currTurnColour;
 
         if(promotable && applyTempMoveBishop(piecePositons[i],possMoves[j],board)){
-          int** tempBoard = copyBoard(board);
-          numPostions = generateMoves(depth-1, board, tempBoard) + numPostions;
-          deleteBoard(tempBoard);
+          //int** tempBoard = copyBoard(board);
+          numPostions = generateMoves(depth-1, board) + numPostions;
+          //deleteBoard(tempBoard);
         }
         whiteMoves = initialpieceMoves[0];
         blackMoves = initialpieceMoves[1];
@@ -2384,9 +2558,9 @@ int generateMoves(int depth, int** board){
         turnColour = currTurnColour;
 
         if(promotable && applyTempMoveRook(piecePositons[i],possMoves[j],board)){
-          int** tempBoard = copyBoard(board);
-          numPostions = generateMoves(depth-1, board, tempBoard) + numPostions;
-          deleteBoard(tempBoard);
+          //int** tempBoard = copyBoard(board);
+          numPostions = generateMoves(depth-1, board) + numPostions;
+          //deleteBoard(tempBoard);
         }
         whiteMoves = initialpieceMoves[0];
         blackMoves = initialpieceMoves[1];
@@ -2398,7 +2572,7 @@ int generateMoves(int depth, int** board){
 
         turnColour = currTurnColour;
       }
-      */
+
       if(applyTempMove(piecePositons[i],possMoves[j],board)){
         //cout << "copyBoard6" << endl;
         //int** tempBoard = copyBoard(board);
@@ -2431,7 +2605,7 @@ int generateMoves(int depth, int** board){
       //board = copyBoard(copiedBoard);
       duplicateBoard(copiedBoard,board);
       //cout << "move is: " << possMoves[j][0] << " " << possMoves[j][1] << endl;
-      if(depth == 6){
+      if(depth == 4){
         cout << "current node: " << piecePositons[i][0] << " " << piecePositons[i][1] << endl;
         cout << "move is: " << possMoves[j][0] << " " << possMoves[j][1] << endl;
         cout << "numPostions: " << numPostions - prevNumPositions << endl;
@@ -2445,7 +2619,7 @@ int generateMoves(int depth, int** board){
       */
       //cout << "passed gm" << endl;
     }
-    if(depth == 6){
+    if(depth == 4){
       cout << endl;
     }
   }
@@ -2566,7 +2740,7 @@ int main(){
 
   int** board = initBoard();
 
-  const string startFen = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - ";
+  const string startFen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ";
   loadBoardFromFen(startFen, board);
   setupAttackingSquares(board);
   //setupSlidingPiecePos(board);
@@ -2581,7 +2755,7 @@ int main(){
   }
   */
   clock_t start = clock();
-  int result = generateMoves(2,board);
+  int result = generateMoves(4,board);
   cout << result << endl;
   cout << boards << endl;
   clock_t end = clock();
