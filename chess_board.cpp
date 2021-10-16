@@ -12,7 +12,9 @@
 
 int boards = 0;
 
-//r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -  depth 4 =
+//r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1 depth = 5 ;  766.26200000 sec
+
+
 
 
 using namespace std;
@@ -29,7 +31,7 @@ const int white = 16;
 
 int turnColour = white;
 
-bool whiteKingMoved = false;
+bool whiteKingMoved = true;
 bool blackKingMoved = false;
 
 bool whiteKingRookMoved = false;
@@ -789,10 +791,7 @@ std::vector<array<int,2>> NewpieceMoves(array<int,2> initPos, int** board){
     int index = it - whitePiecePos.begin();
     if(board[whitePiecePos[index][0]][whitePiecePos[index][1]] % 8 == 2){
       //Update caslting
-      if(!whiteKingMoved && !whiteKingRookMoved){
-        whiteMoves[index] = kingTurn(initPos[0],initPos[1],board);
-      }
-      else if(!whiteKingMoved && !whiteQueenRookMoved){
+      if(!whiteKingMoved && (!whiteKingRookMoved || !whiteQueenRookMoved)){
         whiteMoves[index] = kingTurn(initPos[0],initPos[1],board);
       }
 
@@ -822,13 +821,9 @@ std::vector<array<int,2>> NewpieceMoves(array<int,2> initPos, int** board){
     int index = it - blackPiecePos.begin();
     if(board[blackPiecePos[index][0]][blackPiecePos[index][1]] % 8 == 2 && !blackKingMoved){
       //Update caslting
-      if(!blackKingRookMoved){
+      if(!blackKingRookMoved || !blackQueenRookMoved){
         blackMoves[index] = kingTurn(initPos[0],initPos[1],board);
       }
-      if(!blackQueenRookMoved){
-        blackMoves[index] = kingTurn(initPos[0],initPos[1],board);
-      }
-
     }
     //enPaisant check
     else if(board[blackPiecePos[index][0]][blackPiecePos[index][1]] % 8 == 1){
@@ -932,7 +927,7 @@ array<int,2> kingPos(int** board){
   return {-1,-1};
 }
 
-bool oldMoveResultsInCheck(int** board){
+bool newMoveResultsInCheck(int** board){
   array<int,2> kingPosition = kingPos(board);
 
   int actualRank = kingPosition[0];
@@ -955,23 +950,23 @@ bool oldMoveResultsInCheck(int** board){
     return true;
   }
   //Down-Right
-  if(file != 7 && rank < 6 && board[rank+2][file+1] % 8 == 3 && ((board[rank+2][file+1] ^ turnColour) > (int)board[rank+2][file+1])){
+  if(file != 7 && rank < 6 && board[rank+2][file+1] % 8 == 3 && ((board[rank+2][file+1] ^ turnColour) > board[rank+2][file+1])){
     return true;
   }
   //Down-Left
-  if(file != 0 && rank < 6 && board[rank+2][file-1] % 8 == 3 &&  ((board[rank+2][file-1] ^ turnColour) > (int)board[rank+2][file-1])){
+  if(file != 0 && rank < 6 && board[rank+2][file-1] % 8 == 3 &&  ((board[rank+2][file-1] ^ turnColour) > board[rank+2][file-1])){
     return true;
   }
   //Left-Down
-  if(file > 1 && rank != 7 && board[rank+1][file-2] % 8 == 3 && ((board[rank+1][file-2] ^ turnColour) > (int)board[rank+1][file-2])){
+  if(file > 1 && rank != 7 && board[rank+1][file-2] % 8 == 3 && ((board[rank+1][file-2] ^ turnColour) > board[rank+1][file-2])){
     return true;
   }
   //Left-Up
-  if(file > 1 && rank != 0 && board[rank-1][file-2] % 8 == 3 && ((board[rank-1][file-2] ^ turnColour )> (int)board[rank-1][file-2])){
+  if(file > 1 && rank != 0 && board[rank-1][file-2] % 8 == 3 && ((board[rank-1][file-2] ^ turnColour) > board[rank-1][file-2])){
     return true;
   }
   //Up-Left
-  if(file !=0 && rank > 1 && board[rank-2][file-1] % 8 == 3 && ((board[rank-2][file-1] ^ turnColour) > (int)board[rank-2][file-1])){
+  if(file !=0 && rank > 1 && board[rank-2][file-1] % 8 == 3 && ((board[rank-2][file-1] ^ turnColour) > board[rank-2][file-1])){
     return true;
   }
 
@@ -1035,7 +1030,7 @@ bool oldMoveResultsInCheck(int** board){
     rank--;
     file++;
   }
-  if(rank != 0 && file != 7 && rank == actualRank && file == actualFile && (board[rank-1][file+1] % 8 == 2 || board[rank-1][file+1] == 9)){
+  if(rank != 0 && file != 7 && rank == actualRank && file == actualFile && (board[rank-1][file+1] % 8 == 2 || (board[rank-1][file+1] == 9 && (board[rank-1][file+1] ^ turnColour) > board[rank-1][file+1]))){
     return true;
   }
   if(rank != 0 && file != 7 && (board[rank-1][file+1] % 8 == 4 || board[rank-1][file+1] % 8 == 6) && ((board[rank-1][file+1] ^ turnColour) > board[rank-1][file+1])){
@@ -1048,7 +1043,7 @@ bool oldMoveResultsInCheck(int** board){
     rank++;
     file++;
   }
-  if(rank != 7 && file != 7 && rank == actualRank && file == actualFile && (board[rank+1][file+1] % 8 == 2 || board[rank+1][file+1] == 17)){
+  if(rank != 7 && file != 7 && rank == actualRank && file == actualFile && (board[rank+1][file+1] % 8 == 2 || (board[rank+1][file+1] == 17 && (board[rank+1][file+1] ^ turnColour) > board[rank+1][file+1]))){
     return true;
   }
   if(rank != 7 && file != 7 && (board[rank+1][file+1] % 8 == 4 || board[rank+1][file+1] % 8 == 6) && ((board[rank+1][file+1] ^ turnColour) > board[rank+1][file+1])){
@@ -1061,7 +1056,7 @@ bool oldMoveResultsInCheck(int** board){
     rank++;
     file--;
   }
-  if(rank != 7 && file != 0 && rank == actualRank && file == actualFile && (board[rank+1][file-1] % 8 == 2 || board[rank+1][file-1] == 17)){
+  if(rank != 7 && file != 0 && rank == actualRank && file == actualFile && (board[rank+1][file-1] % 8 == 2 || (board[rank+1][file-1] == 17 && (board[rank+1][file-1] ^ turnColour) > board[rank+1][file-1]))){
     return true;
   }
   if(rank != 7 && file != 0 && (board[rank+1][file-1] % 8 == 4 || board[rank+1][file-1] % 8 == 6) && ((board[rank+1][file-1] ^ turnColour) > board[rank+1][file-1])){
@@ -1074,7 +1069,7 @@ bool oldMoveResultsInCheck(int** board){
     rank--;
     file--;
   }
-  if(rank != 0 && file != 0 && rank == actualRank && file == actualFile && (board[rank-1][file-1] % 8 == 2 || board[rank-1][file-1] == 9)){
+  if(rank != 0 && file != 0 && rank == actualRank && file == actualFile && (board[rank-1][file-1] % 8 == 2 || (board[rank-1][file-1] == 9 && (board[rank-1][file-1] ^ turnColour) > board[rank-1][file-1]))){
     return true;
   }
   if(rank != 0 && file != 0 && (board[rank-1][file-1] % 8 == 4 || board[rank-1][file-1] % 8 == 6) && ((board[rank-1][file-1] ^ turnColour) > board[rank-1][file-1])){
@@ -1085,7 +1080,7 @@ bool oldMoveResultsInCheck(int** board){
 
 }
 
-bool newMoveResultsInCheck(int** board){
+bool oldMoveResultsInCheck(int** board){
   array<int,2> kingPosition = kingPos(board);
   if(turnColour == white){
     for(int i = 0; i<blackPiecePos.size();i++){
@@ -1177,7 +1172,7 @@ void updateSlidingMove(int rank, int file,int** board){
     blackMoves[index] = pieceMoves(rank,file,board);
   }
 }
-
+/*
 void updateUpMove(int rank, int file, int** board){
   array<int,2> position = {rank,file};
   //white
@@ -1406,7 +1401,7 @@ void updateLeftMove(int rank, int file, int** board){
     blackMoves[index] = pieceMoves;
   }
 }
-
+*/
 void updateSlidingMoves(array<int,2> initPos,array<int,2> endPos,int** board){
   std::vector<array<int,2>> alreadyUpdated;
   //initPos
@@ -1588,6 +1583,306 @@ void updateSlidingMoves(array<int,2> initPos,array<int,2> endPos,int** board){
     rank--;
   }
   tempArr = {rank-1,file};
+  if(rank != 0 && (actualRank == rank) && (board[rank-1][file] == 9 || board[rank-1][file] % 8 == 2) && (find(alreadyUpdated.begin(),alreadyUpdated.end(),tempArr) == alreadyUpdated.end())){
+    updateSlidingMove(rank-1,file,board);
+  }
+  if(actualRank == 3 && (abs(actualRank - rank) == 1) && board[rank-1][file] == 9  && (find(alreadyUpdated.begin(),alreadyUpdated.end(),tempArr) == alreadyUpdated.end())){
+    updateSlidingMove(rank-1,file,board);
+  }
+  if(rank != 0  && (board[rank-1][file] % 8 == 5 || board[rank-1][file] % 8 == 6)  && (find(alreadyUpdated.begin(),alreadyUpdated.end(),tempArr) == alreadyUpdated.end())){
+    //updateSlidingMove(rank-1,file,board);
+    updateSlidingMove(rank-1,file,board);
+    //updateUpMove(rank-1,file,board);
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Down
+  while(rank != 7 && board[rank+1][file] == 0){
+    rank++;
+  }
+  tempArr = {rank+1,file};
+  if(rank != 7 && (actualRank == rank) && (board[rank+1][file] == 17 || board[rank+1][file] % 8 == 2) && (find(alreadyUpdated.begin(),alreadyUpdated.end(),tempArr) == alreadyUpdated.end())){
+    updateSlidingMove(rank+1,file,board);
+  }
+  if(actualRank == 4 && (abs(actualRank - rank) == 1) && board[rank+1][file] == 17 && (find(alreadyUpdated.begin(),alreadyUpdated.end(),tempArr) == alreadyUpdated.end())){
+    updateSlidingMove(rank+1,file,board);
+  }
+  if(rank != 7  && (board[rank+1][file] % 8 == 5 || board[rank+1][file] % 8 == 6) && (find(alreadyUpdated.begin(),alreadyUpdated.end(),tempArr) == alreadyUpdated.end())){
+    //updateSlidingMove(rank+1,file,board);
+    updateSlidingMove(rank+1,file,board);
+    //auto it = find(whitePiecePos.begin(),whitePiecePos.end(),tempArr);
+
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Right
+  while(file != 7 && board[rank][file+1] == 0){
+    file++;
+  }
+  tempArr = {rank,file+1};
+
+  if(file != 7 && (actualFile == file) && (board[rank][file+1] % 8 == 2 || (rank == 4 && board[rank][file+1] == 9 && blackEnPaisant == file) || (rank == 3 && board[rank][file+1] == 17 && whiteEnPaisant == file)) && (find(alreadyUpdated.begin(),alreadyUpdated.end(),tempArr) == alreadyUpdated.end())){
+    updateSlidingMove(rank,file+1,board);
+  }
+  if(file != 7  && (board[rank][file+1] % 8 == 5 || board[rank][file+1] % 8 == 6) && (find(alreadyUpdated.begin(),alreadyUpdated.end(),tempArr) == alreadyUpdated.end())){
+    updateSlidingMove(rank, file+1,board);
+    //updateSlidingMove(rank,file+1,board);
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Left
+  while(file != 0 && board[rank][file-1] == 0){
+    file--;
+  }
+  tempArr = {rank,file-1};
+  if(file != 0 && (actualFile == file) && (board[rank][file-1] % 8 == 2 || (rank == 4 && board[rank][file-1]== 9 && blackEnPaisant == file) || (rank == 3 && board[rank][file-1]== 17 && whiteEnPaisant == file)) && (find(alreadyUpdated.begin(),alreadyUpdated.end(),tempArr) == alreadyUpdated.end())){
+    updateSlidingMove(rank,file-1,board);
+  }
+  if(file != 0  && (board[rank][file-1] % 8 == 5 || board[rank][file-1] % 8 == 6) && (find(alreadyUpdated.begin(),alreadyUpdated.end(),tempArr) == alreadyUpdated.end())){
+    updateSlidingMove(rank,file-1,board);
+  }
+  file = actualFile;
+  rank = actualRank;
+
+  //Queen or Bishop || pawn || king
+
+  //Up-Right
+  while(rank != 0 && file != 7 && board[rank-1][file+1] == 0){
+    rank--;
+    file++;
+  }
+  tempArr = {rank-1,file+1};
+  if(rank != 0 && file != 7 && (actualRank == rank) && (actualFile == file) && (board[rank-1][file+1] == 9 || board[rank-1][file+1] % 8 == 2) && (find(alreadyUpdated.begin(),alreadyUpdated.end(),tempArr) == alreadyUpdated.end())){
+    updateSlidingMove(rank-1,file+1,board);
+  }
+  if(rank != 0 && file != 7 && (board[rank-1][file+1] % 8 == 4 || board[rank-1][file+1] % 8 == 6) && (find(alreadyUpdated.begin(),alreadyUpdated.end(),tempArr) == alreadyUpdated.end())){
+    updateSlidingMove(rank-1,file+1,board);
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Down-right
+  while(rank != 7 && file != 7 && board[rank+1][file+1] == 0){
+    rank++;
+    file++;
+  }
+  tempArr = {rank+1,file+1};
+  if(rank != 7 && file != 7 && (actualRank == rank) && (actualFile == file) && ((board[rank+1][file+1] == 17) || board[rank+1][file+1] % 8 == 2) && (find(alreadyUpdated.begin(),alreadyUpdated.end(),tempArr) == alreadyUpdated.end())){
+    updateSlidingMove(rank+1,file+1,board);
+  }
+  if(rank != 7 && file != 7 && (board[rank+1][file+1] % 8 == 4 || board[rank+1][file+1] % 8 == 6) && (find(alreadyUpdated.begin(),alreadyUpdated.end(),tempArr) == alreadyUpdated.end())){
+    updateSlidingMove(rank+1,file+1,board);
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Down-Left
+  while(rank != 7 && file != 0 && board[rank+1][file-1] == 0){
+    rank++;
+    file--;
+  }
+  tempArr = {rank+1,file-1};
+  if(rank != 7 && file != 0 && (actualRank == rank) && (actualFile == file) && (board[rank+1][file-1] == 17 || board[rank+1][file-1] % 8 == 2) && (find(alreadyUpdated.begin(),alreadyUpdated.end(),tempArr) == alreadyUpdated.end())){
+    updateSlidingMove(rank+1,file-1,board);
+  }
+  if(rank != 7 && file != 0 && (board[rank+1][file-1] % 8 == 4 || board[rank+1][file-1] % 8 == 6) && (find(alreadyUpdated.begin(),alreadyUpdated.end(),tempArr) == alreadyUpdated.end())){
+    updateSlidingMove(rank+1,file-1,board);
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Up-Left
+  while(rank != 0 && file != 0 && board[rank-1][file-1] == 0){
+    rank--;
+    file--;
+  }
+  tempArr = {rank-1,file-1};
+  if(rank != 0 && file != 0 && (actualRank == rank) && (actualFile == file) && (board[rank-1][file-1] == 9 || board[rank-1][file-1] % 8 == 2) && (find(alreadyUpdated.begin(),alreadyUpdated.end(),tempArr) == alreadyUpdated.end())){
+    updateSlidingMove(rank-1,file-1,board);
+  }
+  if(rank != 0 && file != 0 && (board[rank-1][file-1] % 8 == 4 || board[rank-1][file-1] % 8 == 6) && (find(alreadyUpdated.begin(),alreadyUpdated.end(),tempArr) == alreadyUpdated.end())){
+    updateSlidingMove(rank-1,file-1,board);
+  }
+}
+/*
+void updateSlidingMoves(array<int,2> initPos,array<int,2> endPos,int** board){
+  std::vector<array<int,2>> alreadyUpdated;
+  //initPos
+
+  int actualRank = initPos[0];
+  int actualFile = initPos[1];
+
+  int rank = initPos[0];
+  int file = initPos[1];
+
+  //Queen || rook || pawn || king
+
+  //Up
+  while(rank != 0 && board[rank-1][file] == 0){
+    rank--;
+  }
+  if(rank != 0 && (actualRank == rank) && (board[rank-1][file] == 9 || board[rank-1][file] % 8 == 2)){
+    //updateSlidingMove(rank-1,file,board);
+    updateSlidingMove(rank-1,file,board);
+    alreadyUpdated.push_back({rank-1,file});
+  }
+  if(actualRank == 3 && (abs(actualRank - rank) == 1) && board[rank-1][file] == 9){
+    //updateSlidingMove(rank-1,file,board);
+    updateSlidingMove(rank-1,file,board);
+    //updateSlidingMove(rank-1,file,board);
+    alreadyUpdated.push_back({rank-1,file});
+  }
+  if(rank != 0  && (board[rank-1][file] % 8 == 5 || board[rank-1][file] % 8 == 6)){
+    //updateSlidingMove(rank-1,file,board);
+    updateSlidingMove(rank-1,file,board);
+    //updateUpMove(rank-1,file,board);
+    alreadyUpdated.push_back({rank-1,file});
+  }
+  file = actualFile;
+  rank = actualRank;
+
+  //Down
+  while(rank != 7 && board[rank+1][file] == 0){
+    rank++;
+  }
+  if(rank != 7 && (actualRank == rank) && (board[rank+1][file] == 17 || board[rank+1][file] % 8 == 2)){
+    updateSlidingMove(rank+1,file,board);
+    alreadyUpdated.push_back({rank+1,file});
+  }
+  if(actualRank == 4 && (abs(actualRank - rank) == 1) && board[rank+1][file] == 17){
+    updateSlidingMove(rank+1,file,board);
+    alreadyUpdated.push_back({rank+1,file});
+  }
+  if(rank != 7  && (board[rank+1][file] % 8 == 5 || board[rank+1][file] % 8 == 6)){
+    //updateDownMove(rank+1,file,board);
+    updateSlidingMove(rank+1,file,board);
+    alreadyUpdated.push_back({rank+1,file});
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Right
+  while(file != 7 && board[rank][file+1] == 0){
+    file++;
+  }
+  if(file != 7 && (actualFile == file) && (board[rank][file+1] % 8 == 2 || (rank == 4 && board[rank][file+1] == 9) || (rank == 3 && board[rank][file+1] == 17))){
+    if(board[rank][file+1] % 8 == 2 || !((file == blackEnPaisant) || (whiteEnPaisant == file))){
+      updateSlidingMove(rank,file+1,board);
+    }
+    else if (board[rank][file+1] == 9){
+      updateSlidingMove(rank+1,file,board);
+    }
+    else{
+      updateSlidingMove(rank-1,file,board);
+    }
+    //updateSlidingMove(rank,file+1,board);
+    alreadyUpdated.push_back({rank,file+1});
+  }
+  if(file != 7  && (board[rank][file+1] % 8 == 5 || board[rank][file+1] % 8 == 6)){
+    //updateRightMove(rank, file+1,board);
+    updateSlidingMove(rank,file+1,board);
+    alreadyUpdated.push_back({rank,file+1});
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Left
+  while(file != 0 && board[rank][file-1] == 0){
+    file--;
+  }
+  if(file != 0 && (actualFile == file) && (board[rank][file-1] % 8 == 2 || (rank == 4 && board[rank][file-1]== 9) || (rank == 3 && board[rank][file-1]== 17))){
+
+    if(board[rank][file-1] % 8 == 2 || !(file == blackEnPaisant || whiteEnPaisant == file)){
+      updateSlidingMove(rank,file-1,board);
+    }
+    else if (board[rank][file-1] == 9){
+      updateSlidingMove(rank+1,file,board);
+    }
+    else{
+      updateSlidingMove(rank-1,file,board);
+    }
+    alreadyUpdated.push_back({rank,file-1});
+  }
+  if(file != 0  && (board[rank][file-1] % 8 == 5 || board[rank][file-1] % 8 == 6)){
+    //updateLeftMove(rank,file-1,board);
+    updateSlidingMove(rank,file-1,board);
+    alreadyUpdated.push_back({rank,file-1});
+  }
+  file = actualFile;
+  rank = actualRank;
+
+  //Queen or Bishop || pawn || king
+  //Up-Right
+  while(rank != 0 && file != 7 && board[rank-1][file+1] == 0){
+    rank--;
+    file++;
+  }
+  if(rank != 0 && file != 7 && (actualRank == rank) && (actualFile == file) && (board[rank-1][file+1] == 9 || board[rank-1][file+1] % 8 == 2)){
+    updateSlidingMove(rank-1,file+1,board);
+    alreadyUpdated.push_back({rank-1,file+1});
+  }
+  if(rank != 0 && file != 7 && (board[rank-1][file+1] % 8 == 4 || board[rank-1][file+1] % 8 == 6)){
+    updateSlidingMove(rank-1,file+1,board);
+    alreadyUpdated.push_back({rank-1,file+1});
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Down-right
+  while(rank != 7 && file != 7 && board[rank+1][file+1] == 0){
+    rank++;
+    file++;
+  }
+  if(rank != 7 && file != 7 && (actualRank == rank) && (actualFile == file) && ((board[rank+1][file+1] == 17) || board[rank+1][file+1] % 8 == 2)){
+    updateSlidingMove(rank+1,file+1,board);
+    alreadyUpdated.push_back({rank+1,file+1});
+  }
+  if(rank != 7 && file != 7 && (board[rank+1][file+1] % 8 == 4 || board[rank+1][file+1] % 8 == 6)){
+    updateSlidingMove(rank+1,file+1,board);
+    alreadyUpdated.push_back({rank+1,file+1});
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Down-Left
+  while(rank != 7 && file != 0 && board[rank+1][file-1] == 0){
+    rank++;
+    file--;
+  }
+  if(rank != 7 && file != 0 && (actualRank == rank) && (actualFile == file) && (board[rank+1][file-1] == 17 || board[rank+1][file-1] % 8 == 2)){
+    updateSlidingMove(rank+1,file-1,board);
+    alreadyUpdated.push_back({rank+1,file-1});
+  }
+  if(rank != 7 && file != 0 && (board[rank+1][file-1] % 8 == 4 || board[rank+1][file-1] % 8 == 6)){
+    updateSlidingMove(rank+1,file-1,board);
+    alreadyUpdated.push_back({rank+1,file-1});
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Up-Left
+  while(rank != 0 && file != 0 && board[rank-1][file-1] == 0){
+    rank--;
+    file--;
+  }
+  if(rank != 0 && file != 0 && (actualRank == rank) && (actualFile == file) && (board[rank-1][file-1] == 9 || board[rank-1][file-1] % 8 == 2)){
+    updateSlidingMove(rank-1,file-1,board);
+    alreadyUpdated.push_back({rank-1,file-1});
+  }
+  if(rank != 0 && file != 0 && (board[rank-1][file-1] % 8 == 4 || board[rank-1][file-1] % 8 == 6)){
+    updateSlidingMove(rank-1,file-1,board);
+    alreadyUpdated.push_back({rank-1,file-1});
+  }
+
+  //endPos
+
+  array<int,2> tempArr;
+
+  actualRank = endPos[0];
+  actualFile = endPos[1];
+
+  rank = actualRank;
+  file = actualFile;
+
+  //Queen || rook || pawn || king
+
+  //Up
+  while(rank != 0 && board[rank-1][file] == 0){
+    rank--;
+  }
+  tempArr = {rank-1,file};
   if(rank != 0 && (actualRank == rank) && (board[rank-1][file] == 9 || board[rank-1][file] % 8 == 2)){
     updateSlidingMove(rank-1,file,board);
   }
@@ -1613,7 +1908,7 @@ void updateSlidingMoves(array<int,2> initPos,array<int,2> endPos,int** board){
     updateSlidingMove(rank+1,file,board);
   }
   if(rank != 7  && (board[rank+1][file] % 8 == 5 || board[rank+1][file] % 8 == 6)){
-    //updateSlidingMove(rank+1,file,board);
+    //updateDownMove(rank+1,file,board);
     updateSlidingMove(rank+1,file,board);
     //auto it = find(whitePiecePos.begin(),whitePiecePos.end(),tempArr);
 
@@ -1630,8 +1925,8 @@ void updateSlidingMoves(array<int,2> initPos,array<int,2> endPos,int** board){
     updateSlidingMove(rank,file+1,board);
   }
   if(file != 7  && (board[rank][file+1] % 8 == 5 || board[rank][file+1] % 8 == 6)){
-    updateSlidingMove(rank, file+1,board);
-    //updateSlidingMove(rank,file+1,board);
+    //updateRightMove(rank, file+1,board);
+    updateSlidingMove(rank,file+1,board);
   }
   file = actualFile;
   rank = actualRank;
@@ -1644,7 +1939,7 @@ void updateSlidingMoves(array<int,2> initPos,array<int,2> endPos,int** board){
     updateSlidingMove(rank,file-1,board);
   }
   if(file != 0  && (board[rank][file-1] % 8 == 5 || board[rank][file-1] % 8 == 6)){
-    updateSlidingMove(rank,file-1,board);
+    //updateLeftMove(rank,file-1,board);
   }
   file = actualFile;
   rank = actualRank;
@@ -1706,7 +2001,7 @@ void updateSlidingMoves(array<int,2> initPos,array<int,2> endPos,int** board){
     updateSlidingMove(rank-1,file-1,board);
   }
 }
-
+*/
 void updateKnightMoves(array<int,2> initPos, array<int,2> endPos,int** board){
   std::vector<array<int,2>> alreadyUpdated;
   array<int,2> tempArr;
@@ -2605,7 +2900,7 @@ int generateMoves(int depth, int** board){
       //board = copyBoard(copiedBoard);
       duplicateBoard(copiedBoard,board);
       //cout << "move is: " << possMoves[j][0] << " " << possMoves[j][1] << endl;
-      if(depth == 4){
+      if(depth == 6){
         cout << "current node: " << piecePositons[i][0] << " " << piecePositons[i][1] << endl;
         cout << "move is: " << possMoves[j][0] << " " << possMoves[j][1] << endl;
         cout << "numPostions: " << numPostions - prevNumPositions << endl;
@@ -2619,8 +2914,9 @@ int generateMoves(int depth, int** board){
       */
       //cout << "passed gm" << endl;
     }
-    if(depth == 4){
+    if(depth == 6){
       cout << endl;
+      //sleep(10);
     }
   }
   deleteBoard(copiedBoard);
@@ -2740,7 +3036,7 @@ int main(){
 
   int** board = initBoard();
 
-  const string startFen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ";
+  const string startFen = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
   loadBoardFromFen(startFen, board);
   setupAttackingSquares(board);
   //setupSlidingPiecePos(board);
@@ -2755,7 +3051,7 @@ int main(){
   }
   */
   clock_t start = clock();
-  int result = generateMoves(4,board);
+  int result = generateMoves(5,board);
   cout << result << endl;
   cout << boards << endl;
   clock_t end = clock();
