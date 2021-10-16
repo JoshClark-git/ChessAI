@@ -2018,28 +2018,24 @@ void updateKnightMoves(array<int,2> initPos, array<int,2> endPos,int** board){
     alreadyUpdated.push_back({rank-2,file+1});
   }
   //Right-Up
-  tempArr = {rank-2,file+1};
-  if(file < 6 && rank != 0 && board[rank-1][file+2] % 8 == 3 && !(find(alreadyUpdated.begin(), alreadyUpdated.end(), tempArr) != alreadyUpdated.end())){
+  if(file < 6 && rank != 0 && board[rank-1][file+2] % 8 == 3){
     updateSlidingMove(rank-1,file+2,board);
-    alreadyUpdated.push_back(tempArr);
+    alreadyUpdated.push_back((rank-1,file+2));
   }
   //Right-Down
-  tempArr = {rank+1,file+2};
-  if(file < 6 && rank != 7 && board[rank+1][file+2] % 8 == 3 && !(find(alreadyUpdated.begin(), alreadyUpdated.end(), tempArr) != alreadyUpdated.end())){
+  if(file < 6 && rank != 7 && board[rank+1][file+2] % 8 == 3){
     updateSlidingMove(rank+1,file+2,board);
-    alreadyUpdated.push_back(tempArr);
+    alreadyUpdated.push_back((rank+1,file+2));
   }
   //Down-Right
-  tempArr = {rank+2,file+1};
-  if(file != 7 && rank < 6 && board[rank+2][file+1] % 8 == 3 && !(find(alreadyUpdated.begin(), alreadyUpdated.end(), tempArr) != alreadyUpdated.end())){
+  if(file != 7 && rank < 6 && board[rank+2][file+1] % 8 == 3){
     updateSlidingMove(rank+2,file+1,board);
-    alreadyUpdated.push_back(tempArr);
+    alreadyUpdated.push_back((rank+2,file+1));
   }
   //Down-Left
-  tempArr = {rank+2,file-1};
-  if(file != 0 && rank < 6 && board[rank+2][file-1] % 8 == 3 && !(find(alreadyUpdated.begin(), alreadyUpdated.end(), tempArr) != alreadyUpdated.end())){
+  if(file != 0 && rank < 6 && board[rank+2][file-1] % 8 == 3){
     updateSlidingMove(rank+2,file-1,board);
-    alreadyUpdated.push_back(tempArr);
+    alreadyUpdated.push_back((rank+2,file-1));
   }
   //Left-Down
   tempArr = {rank+1,file-2};
@@ -2133,6 +2129,7 @@ void updateSlidingPiecePositions(array<int,2> initPos, array<int,2> endPos){
 void updateBlackPiecePositions(array<int,2> initPos, array<int,2> endPos){
   if(endPos[1] > 7){
     cout << "Error with file > 7" << endl;
+    cout << initPos[0] << " " << initPos[1] << endl;
     sleep(100);
   }
   auto it = find(blackPiecePos.begin(), blackPiecePos.end(), initPos);
@@ -2750,7 +2747,7 @@ int generateMoves(int depth, int** board){
       cout << "piece position is: " << piecePositons[i][0] << " " << piecePositons[i][1] << endl;
     }
     */
-    //cout << "piece position is: " << piecePositons[i][0] << " " << piecePositons[i][1] << endl;
+    cout << "piece position is: " << piecePositons[i][0] << " " << piecePositons[i][1] << endl;
     //std::vector<array<int,2>> initpossMoves = pieceMoves(piecePositons[i][0],piecePositons[i][1],board);
     std::vector<array<int,2>> possMoves = NewpieceMoves(piecePositons[i],board);
 
@@ -2797,7 +2794,7 @@ int generateMoves(int depth, int** board){
       //if((board[piecePositons[i][0]][piecePositons[i][1]] % 8 == 1) && (possMoves[j][0] == 0 || possMoves[j][0] == 7)){
       //  numPostions = numPostions + 3;
       //}
-      //cout << "move is: " << possMoves[j][0] << " " << possMoves[j][1] << endl;
+      cout << "move is: " << possMoves[j][0] << " " << possMoves[j][1] << endl;
       prevNumPositions = numPostions;
       int currTurnColour = turnColour;
       bool castleProperties[6];
@@ -2876,7 +2873,7 @@ int generateMoves(int depth, int** board){
         //deleteBoard(tempBoard);
       }
       else{
-        //cout << "failed" << endl;
+        cout << "failed" << endl;
       }
       //cout << "whitePiecePos: " << endl;
       //for(int i = 0; i < whitePiecePos.size();i++){
@@ -2900,10 +2897,14 @@ int generateMoves(int depth, int** board){
       //board = copyBoard(copiedBoard);
       duplicateBoard(copiedBoard,board);
       //cout << "move is: " << possMoves[j][0] << " " << possMoves[j][1] << endl;
-      if(depth == 6){
+      if(depth == 3){
         cout << "current node: " << piecePositons[i][0] << " " << piecePositons[i][1] << endl;
         cout << "move is: " << possMoves[j][0] << " " << possMoves[j][1] << endl;
         cout << "numPostions: " << numPostions - prevNumPositions << endl;
+        if(piecePositons[i][0] == 6 && piecePositons[i][1] == 3){
+          boardPrinter(board);
+          sleep(10);
+        }
       }
       /*
       if(board[7][2] == 18 && board[7][3] == 21){
@@ -2914,7 +2915,7 @@ int generateMoves(int depth, int** board){
       */
       //cout << "passed gm" << endl;
     }
-    if(depth == 6){
+    if(depth == 3){
       cout << endl;
       //sleep(10);
     }
@@ -3036,7 +3037,7 @@ int main(){
 
   int** board = initBoard();
 
-  const string startFen = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
+  const string startFen = "r3k2r/Pppp1ppp/1b4bN/nPB5/B1P1n3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
   loadBoardFromFen(startFen, board);
   setupAttackingSquares(board);
   //setupSlidingPiecePos(board);
@@ -3051,7 +3052,7 @@ int main(){
   }
   */
   clock_t start = clock();
-  int result = generateMoves(5,board);
+  int result = generateMoves(3,board);
   cout << result << endl;
   cout << boards << endl;
   clock_t end = clock();
