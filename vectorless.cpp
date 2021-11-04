@@ -32,6 +32,8 @@ const int bishopValue = 335;
 const int rookValue = 500;
 const int queenValue = 900;
 
+long long int emptyBoard = 0;
+
 int totalMem = 0;
 struct Tuple{
     bool accessed;
@@ -44,6 +46,18 @@ struct MoveList{
   array<int,4>* moves;
 };
 
+struct BitBoard{
+  long long int attackingSquares;
+  long long int kingDangerSquares;
+  long long int checkers;
+  long long int checkRay;
+  int numCheckers;
+};
+
+long long int posToBitBoard(array<int,2> pos){
+  return (long long int)pow(2,((pos[0]) * 8) + pos[1]);
+}
+
 
 
 unsigned long long int ZobristTable[8][8][12][64][8][2];
@@ -53,7 +67,7 @@ mt19937 mt(01234567);
 
 int totalCount = 0;
 
-int turnColour = white;
+int turnColour = black;
 
 stack<bool> castlePropertiesStack;
 stack<int> EnPaisantPropertiesStack;
@@ -66,7 +80,7 @@ bool whiteQueenRookMoved = false;
 bool blackKingRookMoved = false;
 bool blackQueenRookMoved = false;
 
-int blackEnPaisant = 9;
+int blackEnPaisant = 3;
 int whiteEnPaisant = 9;
 
 
@@ -982,6 +996,17 @@ unsigned long long int computeHash(int** board, Board myBoard){
     return h;
 }
 
+void bitBoardPrinter(long long int board){
+  long long int val;
+  for(int i = 0; i < 8; i++){
+    for(int j = 0; j < 8; j++){
+      val = ((board & (long long int)pow(2,(i * 8) + j) ? 0 : 1) + 1) % 2;
+      cout << " " << val << " ";
+    }
+    cout << endl;
+  }
+}
+
 void boardPrinter(int** board){
   for(int i = 0; i < 8; i++){
     for(int j = 0; j < 8; j++){
@@ -1867,6 +1892,942 @@ void queenMoves(int rank, int file, int** board, int &accum, MoveList possMoves)
   turnColour = currTurnColour;
   //return possMoves;
 }
+
+
+void pawnMovesCheck(int rank, int file, int** board, int &accum, MoveList possMoves, long long int checkers, long long int checkRay, bool slidingPiece){
+  blackEnPaisant = EnPaisantPropertiesStack.top();
+  EnPaisantPropertiesStack.pop();
+  whiteEnPaisant = EnPaisantPropertiesStack.top();
+  EnPaisantPropertiesStack.push(blackEnPaisant);
+  int currTurnColour = turnColour;
+  if(board[rank][file] > 16){
+    turnColour = white;
+  }
+  else{
+    turnColour = black;
+  }
+  long long int squareVal;
+  long long int enPaissantSquare;
+
+  if(turnColour==white){
+    if(board[rank-1][file] == 0){
+      squareVal = (long long int)pow(2,(rank-1) * 8 + file);
+      if(slidingPiece && ((squareVal & checkRay) == squareVal)){
+        possMoves.moves[accum] = {rank,file,rank-1,file};
+        accum++;
+      }
+      if(rank == 6 && board[rank-2][file] == 0){
+        squareVal = (long long int)pow(2,(rank-2) * 8 + file);
+        if(slidingPiece && ((squareVal & checkRay) == squareVal)){
+          possMoves.moves[accum] = {rank,file,rank-2,file};
+          accum++;
+        }
+      }
+    }
+    //Up-right take
+    squareVal = (long long int)pow(2,(rank-1) * 8 + file+1);
+    enPaissantSquare = (long long int)pow(2,(rank) * 8 + file+1);
+    if(rank != 0 && file != 7 && (((enPaissantSquare & checkers) == checkers) || ((rank == 3 && (whiteEnPaisant - file) == 1)) && (slidingPiece && ((squareVal & checkRay) == squareVal)))){
+      possMoves.moves[accum] = {rank,file,rank-1,file+1};
+      accum++;
+    }
+    //Up-left take
+    squareVal = (long long int)pow(2,(rank-1) * 8 + file-1);
+    enPaissantSquare = (long long int)pow(2,(rank) * 8 + file-1);
+    if(rank != 0 && file != 0 && (((enPaissantSquare & checkers) == checkers) || ((rank == 3 && (file - whiteEnPaisant) == 1)) && (slidingPiece && ((squareVal & checkRay) == squareVal)))){
+      possMoves.moves[accum] = {rank,file,rank-1,file-1};
+      accum++;
+    }
+  }
+  else{
+    if(board[rank+1][file] == 0){
+      squareVal = (long long int)pow(2,(rank+1) * 8 + file);
+      if(slidingPiece && ((squareVal & checkRay) == squareVal)){
+        possMoves.moves[accum] = {rank,file,rank+1,file};
+        accum++;
+      }
+      if(rank == 1 && board[rank+2][file] == 0){
+        squareVal = (long long int)pow(2,(rank+2) * 8 + file);
+        if(slidingPiece && ((squareVal & checkRay) == squareVal)){
+          possMoves.moves[accum] = {rank,file,rank+2,file};
+          accum++;
+        }
+      }
+    }
+    squareVal = (long long int)pow(2,(rank+1) * 8 + file+1);
+    enPaissantSquare = (long long int)pow(2,(rank) * 8 + file+1);
+    if(rank != 7 && file != 7 && (((enPaissantSquare & checkers) == checkers) || ((rank == 4 && (blackEnPaisant - file) == 1)) && (slidingPiece && ((squareVal & checkRay) == squareVal)))){
+      possMoves.moves[accum] = {rank,file,rank+1,file+1};
+      accum++;
+    }
+    //Up-left take
+    squareVal = (long long int)pow(2,(rank+1) * 8 + file-1);
+    enPaissantSquare = (long long int)pow(2,(rank) * 8 + file-1);
+    if(rank != 7 && file != 0 && (((enPaissantSquare & checkers) == checkers) || ((rank == 4 && (file - blackEnPaisant) == 1)) && (slidingPiece && ((squareVal & checkRay) == squareVal)))){
+      possMoves.moves[accum] = {rank,file,rank+1,file-1};
+      accum++;
+    }
+  }
+  turnColour = currTurnColour;
+}
+void knightMovesCheck(int rank, int file, int** board, int &accum, MoveList possMoves, long long int checkers, long long int checkRay, bool slidingPiece){
+  int currTurnColour = turnColour;
+  if(board[rank][file] > 16){
+    turnColour = white;
+  }
+  else{
+    turnColour = black;
+  }
+  long long int squareVal;
+  squareVal = (long long int)pow(2,(rank-2) * 8 + file+1);
+  if(file != 7 && rank > 1 && (((squareVal & checkers) == checkers) || (slidingPiece && ((squareVal & checkRay) == squareVal)))){
+    possMoves.moves[accum] = {rank,file,rank-2,file+1};
+    accum++;
+    //possTurns.push_back({rank-2,file+1});
+  }
+  //Right-Up
+  squareVal = (long long int)pow(2,(rank-1) * 8 + file+2);
+  if(file < 6 && rank != 0 && (((squareVal & checkers) == checkers) || (slidingPiece && ((squareVal & checkRay) == squareVal)))){
+    possMoves.moves[accum] = {rank,file,rank-1,file+2};
+    accum++;
+  }
+  //Right-Down
+  squareVal = (long long int)pow(2,(rank+1) * 8 + file+2);
+  if(file < 6 && rank != 7 && (((squareVal & checkers) == checkers) || (slidingPiece && ((squareVal & checkRay) == squareVal)))){
+    possMoves.moves[accum] = {rank,file,rank+1,file+2};
+    accum++;
+  }
+  //Down-Right
+  squareVal = (long long int)pow(2,(rank+2) * 8 + file+1);
+  if(file != 7 && rank < 6 && (((squareVal & checkers) == checkers) || (slidingPiece && ((squareVal & checkRay) == squareVal)))){
+    possMoves.moves[accum] = {rank,file,rank+2,file+1};
+    accum++;
+  }
+  //Down-Left
+  squareVal = (long long int)pow(2,(rank+2) * 8 + file-1);
+  if(file != 0 && rank < 6 && (((squareVal & checkers) == checkers) || (slidingPiece && ((squareVal & checkRay) == squareVal)))){
+    possMoves.moves[accum] = {rank,file,rank+2,file-1};
+    accum++;
+  }
+  //Left-Down
+  squareVal = (long long int)pow(2,(rank+1) * 8 + file-2);
+  if(file > 1 && rank != 7 && (((squareVal & checkers) == checkers) || (slidingPiece && ((squareVal & checkRay) == squareVal)))){
+    possMoves.moves[accum] = {rank,file,rank+1,file-2};
+    accum++;
+  }
+  //Left-Up
+  if(file > 1 && rank != 0 && (((squareVal & checkers) == checkers) || (slidingPiece && ((squareVal & checkRay) == squareVal)))){
+    possMoves.moves[accum] = {rank,file,rank-1,file-2};
+    accum++;
+  }
+  //Up-Left
+  squareVal = (long long int)pow(2,(rank-2) * 8 + file-1);
+  if(file !=0 && rank > 1 && (((squareVal & checkers) == checkers) || (slidingPiece && ((squareVal & checkRay) == squareVal)))){
+    possMoves.moves[accum] = {rank,file,rank-2,file-1};
+    accum++;
+  }
+  turnColour = currTurnColour;
+}
+void bishopMovesCheck(int rank, int file, int** board, int &accum, MoveList possMoves, long long int checkers, long long int checkRay, bool slidingPiece){
+  auto currTurnColour = turnColour;
+  if(board[rank][file] > 16){
+    turnColour = white;
+  }
+  else{
+    turnColour = black;
+  }
+  int actualRank = rank;
+  int actualFile = file;
+  long long int squareVal;
+  //Up-Right
+  while(rank != 0 && file != 7 && board[rank-1][file+1] == 0){
+    squareVal = (long long int)pow(2,(rank-1) * 8 + file+1);
+    if(slidingPiece && ((squareVal & checkRay) == squareVal)){
+      possMoves.moves[accum] = {actualRank,actualFile,rank-1,file+1};
+      accum++;
+    }
+    rank--;
+    file++;
+  }
+  squareVal = (long long int)pow(2,(rank-1) * 8 + file+1);
+  if(rank != 0 && file != 7  && ((squareVal & checkers) == checkers)){
+    possMoves.moves[accum] = {actualRank,actualFile,rank-1,file+1};
+    accum++;
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Down-right
+  while(rank != 7 && file != 7 && board[rank+1][file+1] == 0){
+    squareVal = (long long int)pow(2,(rank+1) * 8 + file+1);
+    if(slidingPiece && ((squareVal & checkRay) == squareVal)){
+      possMoves.moves[accum] = {actualRank,actualFile,rank+1,file+1};
+      accum++;
+    }
+    rank++;
+    file++;
+  }
+  squareVal = (long long int)pow(2,(rank+1) * 8 + file+1);
+  if(rank != 7 && file != 7 && ((squareVal & checkers) == checkers)){
+    possMoves.moves[accum] = {actualRank,actualFile,rank+1,file+1};
+    accum++;
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Down-Left
+  while(rank != 7 && file != 0 && board[rank+1][file-1] == 0){
+    squareVal = (long long int)pow(2,(rank+1) * 8 + file-1);
+    if(slidingPiece && ((squareVal & checkRay) == squareVal)){
+      possMoves.moves[accum] = {actualRank,actualFile,rank+1,file-1};
+      accum++;
+    }
+    rank++;
+    file--;
+  }
+  squareVal = (long long int)pow(2,(rank+1) * 8 + file-1);
+  if(rank != 7 && file != 0 && ((squareVal & checkers) == checkers)){
+    possMoves.moves[accum] = {actualRank,actualFile,rank+1,file-1};
+    accum++;
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Up-Left
+  while(rank != 0 && file != 0 && board[rank-1][file-1] == 0){
+    squareVal = (long long int)pow(2,(rank-1) * 8 + file-1);
+    if(slidingPiece && ((squareVal & checkRay) == squareVal)){
+      possMoves.moves[accum] = {actualRank,actualFile,rank-1,file-1};
+      accum++;
+    }
+    rank--;
+    file--;
+  }
+  squareVal = (long long int)pow(2,(rank-1) * 8 + file-1);
+  cout << "squareVal" << endl;
+  bitBoardPrinter(squareVal);
+  cout << "checkers" << endl;
+  bitBoardPrinter(checkers);
+  if(rank != 0 && file != 0 && ((squareVal & checkers) == checkers)){
+    possMoves.moves[accum] = {actualRank,actualFile,rank-1,file-1};
+    accum++;
+  }
+  turnColour = currTurnColour;
+
+}
+void rookMovesCheck(int rank, int file, int** board, int &accum, MoveList possMoves, long long int checkers, long long int checkRay, bool slidingPiece){
+  auto currTurnColour = turnColour;
+  if(board[rank][file] > 16){
+    turnColour = white;
+  }
+  else{
+    turnColour = black;
+  }
+  int actualRank = rank;
+  int actualFile = file;
+  long long int squareVal;
+
+  //Up
+  while(rank != 0 && board[rank-1][file] == 0){
+    squareVal = (long long int)pow(2,(rank-1) * 8 + file);
+    if(slidingPiece && ((squareVal & checkRay) == squareVal)){
+      possMoves.moves[accum] = {actualRank,actualFile,rank-1,file};
+      accum++;
+    }
+    rank--;
+  }
+  squareVal = (long long int)pow(2,(rank-1) * 8 + file);
+  if(rank != 0 && ((squareVal & checkers) == checkers)){
+    possMoves.moves[accum] = {actualRank,actualFile,rank-1,file};
+    accum++;
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Down
+  while(rank != 7 && board[rank+1][file] == 0){
+    squareVal = (long long int)pow(2,(rank+1) * 8 + file);
+    if(slidingPiece && ((squareVal & checkRay) == squareVal)){
+      possMoves.moves[accum] = {actualRank,actualFile,rank+1,file};
+      accum++;
+    }
+    rank++;
+  }
+  squareVal = (long long int)pow(2,(rank+1) * 8 + file);
+  if(rank != 7 && ((squareVal & checkers) == checkers)){
+    possMoves.moves[accum] = {actualRank,actualFile,rank+1,file};
+    accum++;
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Right
+  while(file != 7 && board[rank][file+1] == 0){
+    squareVal = (long long int)pow(2,(rank) * 8 + file+1);
+    if(slidingPiece && ((squareVal & checkRay) == squareVal)){
+      possMoves.moves[accum] = {actualRank,actualFile,rank,file+1};
+      accum++;
+    }
+    file++;
+  }
+  squareVal = (long long int)pow(2,(rank) * 8 + file+1);
+  if(file != 7 && ((squareVal & checkers) == checkers)){
+    possMoves.moves[accum] = {actualRank,actualFile,rank,file+1};
+    accum++;
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Left
+  while(file != 0 && board[rank][file-1] == 0){
+    squareVal = (long long int)pow(2,(rank) * 8 + file-1);
+    if(slidingPiece && ((squareVal & checkRay) == squareVal)){
+      possMoves.moves[accum] = {actualRank,actualFile,rank,file-1};
+      accum++;
+    }
+    file--;
+  }
+  squareVal = (long long int)pow(2,(rank) * 8 + file-1);
+  if(file != 0 && ((squareVal & checkers) == checkers)){
+    possMoves.moves[accum] = {actualRank,actualFile,rank,file-1};
+    accum++;
+  }
+  turnColour = currTurnColour;
+}
+void queenMovesCheck(int rank, int file, int** board, int &accum, MoveList possMoves){
+  //cout << "in queen Moves" << endl;
+
+  auto currTurnColour = turnColour;
+  if(board[rank][file] > 16){
+    turnColour = white;
+  }
+  else{
+    turnColour = black;
+  }
+  std::vector<array<int,2>> possTurns;
+  int actualRank = rank;
+  int actualFile = file;
+
+  //Up-Right
+  while(rank != 0 && file != 7 && board[rank-1][file+1] == 0){
+    possMoves.moves[accum] = {actualRank,actualFile,rank-1,file+1};
+    accum++;
+    rank--;
+    file++;
+  }
+  if(rank != 0 && file != 7 && ((board[rank-1][file+1] ^ turnColour) > board[rank-1][file+1])){
+    possMoves.moves[accum] = {actualRank,actualFile,rank-1,file+1};
+    accum++;
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Down-right
+  while(rank != 7 && file != 7 && board[rank+1][file+1] == 0){
+    possMoves.moves[accum] = {actualRank,actualFile,rank+1,file+1};
+    accum++;
+    rank++;
+    file++;
+  }
+  if(rank != 7 && file != 7 && ((board[rank+1][file+1] ^ turnColour) > board[rank+1][file+1])){
+    possMoves.moves[accum] = {actualRank,actualFile,rank+1,file+1};
+    accum++;
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Down-Left
+  while(rank != 7 && file != 0 && board[rank+1][file-1] == 0){
+    possMoves.moves[accum] = {actualRank,actualFile,rank+1,file-1};
+    accum++;
+    rank++;
+    file--;
+  }
+  if(rank != 7 && file != 0 && ((board[rank+1][file-1] ^ turnColour) > board[rank+1][file-1])){
+    possMoves.moves[accum] = {actualRank,actualFile,rank+1,file-1};
+    accum++;
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Up-Left
+  while(rank != 0 && file != 0 && board[rank-1][file-1] == 0){
+    possMoves.moves[accum] = {actualRank,actualFile,rank-1,file-1};
+    accum++;
+    rank--;
+    file--;
+  }
+  if(rank != 0 && file != 0 && ((board[rank-1][file-1] ^ turnColour) > board[rank-1][file-1])){
+    possMoves.moves[accum] = {actualRank,actualFile,rank-1,file-1};
+    accum++;
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Up
+  while(rank != 0 && board[rank-1][file] == 0){
+    possMoves.moves[accum] = {actualRank,actualFile,rank-1,file};
+    accum++;
+    rank--;
+  }
+  if(rank != 0  && ((board[rank-1][file] ^ turnColour) > board[rank-1][file])){
+    possMoves.moves[accum] = {actualRank,actualFile,rank-1,file};
+    accum++;
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Down
+  while(rank != 7 && board[rank+1][file] == 0){
+    possMoves.moves[accum] = {actualRank,actualFile,rank+1,file};
+    accum++;
+    rank++;
+  }
+  if(rank != 7  && ((board[rank+1][file] ^ turnColour) > board[rank+1][file])){
+    possMoves.moves[accum] = {actualRank,actualFile,rank+1,file};
+    accum++;
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Right
+  while(file != 7 && board[rank][file+1] == 0){
+    possMoves.moves[accum] = {actualRank,actualFile,rank,file+1};
+    accum++;
+    file++;
+  }
+  if(file != 7  && ((board[rank][file+1] ^ turnColour) > board[rank][file+1])){
+    possMoves.moves[accum] = {actualRank,actualFile,rank,file+1};
+    accum++;
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Left
+  while(file != 0 && board[rank][file-1] == 0){
+    possMoves.moves[accum] = {actualRank,actualFile,rank,file-1};
+    accum++;
+    file--;
+  }
+  if(file != 0  && ((board[rank][file-1] ^ turnColour) > board[rank][file-1])){
+    possMoves.moves[accum] = {actualRank,actualFile,rank,file-1};
+    accum++;
+  }
+  //possMoves.size = accum;
+  turnColour = currTurnColour;
+  //return possMoves;
+}
+void kingMovesCheck(int rank, int file, int** board, int &accum, MoveList possMoves, long long int bitBoard){
+  auto currTurnColour = turnColour;
+  if(board[rank][file] > 16){
+    turnColour = white;
+  }
+  else{
+    turnColour = black;
+  }
+  //Up
+  if(rank != 0  && !((long long int)pow(2,(rank-1) * 8 + file) & bitBoard) && ((board[rank-1][file] ^ turnColour) > board[rank-1][file])){
+    possMoves.moves[accum] = {rank,file,rank-1,file};
+    accum++;
+  }
+  //Down
+  if(rank != 7  && !((long long int)pow(2,(rank+1) * 8 + file) & bitBoard) && ((board[rank+1][file] ^ turnColour) > board[rank+1][file])){
+    possMoves.moves[accum] = {rank,file,rank+1,file};
+    accum++;
+  }
+  //Right
+
+  if(file != 7  && !((long long int)pow(2,(rank) * 8 + file+1) & bitBoard) &&  ((board[rank][file+1] ^ turnColour) > board[rank][file+1])){
+    possMoves.moves[accum] = {rank,file,rank,file+1};
+    accum++;
+  }
+  //Left
+  if(file != 0  && !((long long int)pow(2,(rank) * 8 + file-1) & bitBoard) && ((board[rank][file-1] ^ turnColour) > board[rank][file-1])){
+    possMoves.moves[accum] = {rank,file,rank,file-1};
+    accum++;
+  }
+  //Up-Right
+  if(rank != 0 && file != 7 && !((long long int)pow(2,(rank-1) * 8 + file+1) & bitBoard) && ((board[rank-1][file+1] ^ turnColour) > board[rank-1][file+1])){
+    possMoves.moves[accum] = {rank,file,rank-1,file+1};
+    accum++;
+  }
+  //Down-Right
+  if(rank != 7 && file != 7 && !((long long int)pow(2,(rank+1) * 8 + file+1) & bitBoard) && ((board[rank+1][file+1] ^ turnColour) > board[rank+1][file+1])){
+    possMoves.moves[accum] = {rank,file,rank+1,file+1};
+    accum++;
+  }
+  //Down-Left
+  if(rank != 7 && file != 0 && !((long long int)pow(2,(rank+1) * 8 + file-1) & bitBoard) && ((board[rank+1][file-1] ^ turnColour) > board[rank+1][file-1])){
+    possMoves.moves[accum] = {rank,file,rank+1,file-1};
+    accum++;
+  }
+  //Up-Left
+  if(rank != 0 && file != 0 && !((long long int)pow(2,(rank-1) * 8 + file-1) & bitBoard) && ((board[rank-1][file-1] ^ turnColour) > board[rank-1][file-1])){
+    possMoves.moves[accum] = {rank,file,rank-1,file-1};
+    accum++;
+  }
+
+  turnColour = currTurnColour;
+}
+
+
+void pawnMoves(int rank,int file, int** board ,long long int kingPos,BitBoard& bBoard){
+  auto currTurnColour = turnColour;
+  if(board[rank][file] > 16){
+    turnColour = white;
+  }
+  else{
+    turnColour = black;
+  }
+
+  if(turnColour == white){
+    if(file > 0){
+      long long int squareVal = (long long int)pow(2,(rank-1) * 8 + file-1);
+      bBoard.attackingSquares |= squareVal;
+      bBoard.kingDangerSquares |= squareVal;
+      if((squareVal & kingPos) == kingPos){
+        squareVal = (long long int)pow(2,(rank) * 8 + file);
+        bBoard.checkers |= squareVal;
+        bBoard.numCheckers++;
+      }
+    }
+    if(file < 7){
+      long long int squareVal = (long long int)pow(2,(rank-1) * 8 + file+1);
+      bBoard.attackingSquares |= squareVal;
+      bBoard.kingDangerSquares |= squareVal;
+      if((squareVal & kingPos) == kingPos){
+        squareVal = (long long int)pow(2,(rank) * 8 + file);
+        bBoard.checkers |= squareVal;
+        bBoard.numCheckers++;
+      }
+    }
+  }
+  else{
+    if(file > 0){
+      long long int squareVal = (long long int)pow(2,(rank+1) * 8 + file-1);
+      bBoard.attackingSquares |= squareVal;
+      bBoard.kingDangerSquares |= squareVal;
+      if((squareVal & kingPos) == kingPos){
+        squareVal = (long long int)pow(2,(rank) * 8 + file);
+        bBoard.checkers |= squareVal;
+        bBoard.numCheckers++;
+      }
+    }
+    if(file < 7){
+      long long int squareVal = (long long int)pow(2,(rank+1) * 8 + file+1);
+      bBoard.attackingSquares |= squareVal;
+      bBoard.kingDangerSquares |= squareVal;
+      if((squareVal & kingPos) == kingPos){
+        squareVal = (long long int)pow(2,(rank) * 8 + file);
+        bBoard.checkers |= squareVal;
+        bBoard.numCheckers++;
+      }
+    }
+  }
+
+  turnColour = currTurnColour;
+}
+void knightMoves(int rank,int file, int** board ,long long int kingPos,BitBoard& bBoard){
+  int currTurnColour = turnColour;
+  if(board[rank][file] > 16){
+    turnColour = white;
+  }
+  else{
+    turnColour = black;
+  }
+  if(file != 7 && rank > 1 && ((board[rank-2][file+1] ^ turnColour) > board[rank-2][file+1])){
+    long long int squareVal = (long long int)pow(2,(rank-2) * 8 + file+1);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if(squareVal & kingPos == kingPos){
+      bBoard.checkers |= squareVal;
+      bBoard.numCheckers++;
+    }
+  }
+  //Right-Up
+  if(file < 6 && rank != 0 && ((board[rank-1][file+2] ^ turnColour) > board[rank-1][file+2])){
+    long long int squareVal = (long long int)pow(2,(rank-1) * 8 + file+2);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if(squareVal & kingPos == kingPos){
+      bBoard.checkers |= squareVal;
+      bBoard.numCheckers++;
+    }
+  }
+  //Right-Down
+  if(file < 6 && rank != 7 && ((board[rank+1][file+2] ^ turnColour) > board[rank+1][file+2])){
+    long long int squareVal = (long long int)pow(2,(rank+1) * 8 + file+2);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if(squareVal & kingPos == kingPos){
+      bBoard.checkers |= squareVal;
+      bBoard.numCheckers++;
+    }
+  }
+  //Down-Right
+  if(file != 7 && rank < 6 && (((int)board[rank+2][file+1] ^ turnColour) > (int)board[rank+2][file+1])){
+    long long int squareVal = (long long int)pow(2,(rank+2) * 8 + file+1);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if(squareVal & kingPos == kingPos){
+      bBoard.checkers |= squareVal;
+      bBoard.numCheckers++;
+    }
+  }
+  //Down-Left
+  if(file != 0 && rank < 6 && (((int)board[rank+2][file-1] ^ turnColour) > (int)board[rank+2][file-1])){
+    long long int squareVal = (long long int)pow(2,(rank+2) * 8 + file-1);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if(squareVal & kingPos == kingPos){
+      bBoard.checkers |= squareVal;
+      bBoard.numCheckers++;
+    }
+  }
+  //Left-Down
+  if(file > 1 && rank != 7 && (((int)board[rank+1][file-2] ^ turnColour) > (int)board[rank+1][file-2])){
+    long long int squareVal = (long long int)pow(2,(rank+1) * 8 + file-2);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if(squareVal & kingPos == kingPos){
+      bBoard.checkers |= squareVal;
+      bBoard.numCheckers++;
+    }
+  }
+  //Left-Up
+  if(file > 1 && rank != 0 && (((int)board[rank-1][file-2] ^ turnColour )> (int)board[rank-1][file-2])){
+    long long int squareVal = (long long int)pow(2,(rank-1) * 8 + file-2);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if(squareVal & kingPos == kingPos){
+      bBoard.checkers |= squareVal;
+      bBoard.numCheckers++;
+    }
+  }
+  //Up-Left
+  if(file !=0 && rank > 1 && (((int)board[rank-2][file-1] ^ turnColour) > (int)board[rank-2][file-1])){
+    long long int squareVal = (long long int)pow(2,(rank-2) * 8 + file-1);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if(squareVal & kingPos == kingPos){
+      bBoard.checkers |= squareVal;
+      bBoard.numCheckers++;
+    }
+  }
+  turnColour = currTurnColour;
+}
+void bishopMoves(int rank,int file, int** board ,long long int kingPos,BitBoard& bBoard){
+  auto currTurnColour = turnColour;
+  if(board[rank][file] > 16){
+    turnColour = white;
+  }
+  else{
+    turnColour = black;
+  }
+  int actualRank = rank;
+  int actualFile = file;
+  //Up-Right
+  long long int squareVal;
+  while(rank != 0 && file != 7 && board[rank-1][file+1] == 0){
+    squareVal = (long long int)pow(2,(rank-1) * 8 + file+1);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if(!bBoard.numCheckers){
+      bBoard.checkRay |= squareVal;
+    }
+    rank--;
+    file++;
+  }
+  if(rank != 0 && file != 7 && ((board[rank-1][file+1] ^ turnColour) > board[rank-1][file+1])){
+    squareVal = (long long int)pow(2,(rank-1) * 8 + file+1);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if((squareVal & kingPos) == kingPos){
+      squareVal = (long long int)pow(2,(actualRank) * 8 + actualFile);
+      bBoard.checkers |= squareVal;
+      bBoard.numCheckers++;
+      if(rank != 1 && file != 6){
+        bBoard.kingDangerSquares |= (long long int)pow(2,(rank-2) * 8 + file+2);
+      }
+    }
+  }
+  if(!bBoard.numCheckers){
+    bBoard.checkRay = 0;
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Down-right
+  while(rank != 7 && file != 7 && board[rank+1][file+1] == 0){
+    squareVal = (long long int)pow(2,(rank+1) * 8 + file+1);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if(!bBoard.numCheckers){
+      bBoard.checkRay |= squareVal;
+    }
+
+    rank++;
+    file++;
+  }
+  if(rank != 7 && file != 7 && ((board[rank+1][file+1] ^ turnColour) > board[rank+1][file+1])){
+    squareVal = (long long int)pow(2,(rank+1) * 8 + file+1);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if((squareVal & kingPos) == kingPos){
+      squareVal = (long long int)pow(2,(actualRank) * 8 + actualFile);
+      bBoard.checkers |= squareVal;
+      bBoard.numCheckers++;
+      if(rank != 6 && file != 6){
+        bBoard.kingDangerSquares |= (long long int)pow(2,(rank+2) * 8 + file+2);
+      }
+    }
+  }
+  if(!bBoard.numCheckers){
+    bBoard.checkRay = 0;
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Down-Left
+  while(rank != 7 && file != 0 && board[rank+1][file-1] == 0){
+    squareVal = (long long int)pow(2,(rank+1) * 8 + file-1);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if(!bBoard.numCheckers){
+      bBoard.checkRay |= squareVal;
+    }
+
+    rank++;
+    file--;
+  }
+  if(rank != 7 && file != 0 && ((board[rank+1][file-1] ^ turnColour) > board[rank+1][file-1])){
+    squareVal = (long long int)pow(2,(rank+1) * 8 + file-1);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if((squareVal & kingPos) == kingPos){
+      squareVal = (long long int)pow(2,(actualRank) * 8 + actualFile);
+      bBoard.checkers |= squareVal;
+      bBoard.numCheckers++;
+      if(rank != 6 && file != 1){
+        bBoard.kingDangerSquares |= (long long int)pow(2,(rank+2) * 8 + file-2);
+      }
+    }
+  }
+  if(!bBoard.numCheckers){
+    bBoard.checkRay = 0;
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Up-Left
+  while(rank != 0 && file != 0 && board[rank-1][file-1] == 0){
+    squareVal = (long long int)pow(2,(rank-1) * 8 + file-1);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if(!bBoard.numCheckers){
+      bBoard.checkRay |= squareVal;
+    }
+
+    rank--;
+    file--;
+  }
+  if(rank != 0 && file != 0 && ((board[rank-1][file-1] ^ turnColour) > board[rank-1][file-1])){
+    squareVal = (long long int)pow(2,(rank-1) * 8 + file-1);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if((squareVal & kingPos) == kingPos){
+      squareVal = (long long int)pow(2,(actualRank) * 8 + actualFile);
+      bBoard.checkers |= squareVal;
+      bBoard.numCheckers++;
+      if(rank != 1 && file != 1 && board[rank-1][file-1] % 8 == 2){
+        bBoard.kingDangerSquares |= (long long int)pow(2,(rank-2) * 8 + file-2);
+      }
+    }
+  }
+  if(!bBoard.numCheckers){
+    bBoard.checkRay = 0;
+  }
+  turnColour = currTurnColour;
+
+}
+void rookMoves(int rank,int file, int** board ,long long int kingPos,BitBoard& bBoard){
+  auto currTurnColour = turnColour;
+  if(board[rank][file] > 16){
+    turnColour = white;
+  }
+  else{
+    turnColour = black;
+  }
+  int actualRank = rank;
+  int actualFile = file;
+  long long int squareVal;
+
+  //Up
+  while(rank != 0 && board[rank-1][file] == 0){
+    squareVal = (long long int)pow(2,(rank-1) * 8 + file);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if(!bBoard.numCheckers){
+      bBoard.checkRay |= squareVal;
+    }
+
+    rank--;
+  }
+  if(rank != 0  && ((board[rank-1][file] ^ turnColour) > board[rank-1][file])){
+    squareVal = (long long int)pow(2,(rank-1) * 8 + file);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if((squareVal & kingPos) == kingPos){
+      squareVal = (long long int)pow(2,(actualRank) * 8 + actualFile);
+      bBoard.checkers |= squareVal;
+      bBoard.numCheckers++;
+      if(rank != 1){
+        bBoard.kingDangerSquares |= (long long int)pow(2,(rank-2) * 8 + file);
+      }
+    }
+  }
+  if(!bBoard.numCheckers){
+    bBoard.checkRay = 0;
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Down
+  while(rank != 7 && board[rank+1][file] == 0){
+    squareVal = (long long int)pow(2,(rank+1) * 8 + file);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if(!bBoard.numCheckers){
+      bBoard.checkRay |= squareVal;
+    }
+
+    rank++;
+  }
+
+
+  if(rank != 7  && ((board[rank+1][file] ^ turnColour) > board[rank+1][file])){
+    squareVal = (long long int)pow(2,(rank+1) * 8 + file);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if((squareVal & kingPos) == kingPos){
+      squareVal = (long long int)pow(2,(actualRank) * 8 + actualFile);
+      bBoard.checkers |= squareVal;
+      bBoard.numCheckers++;
+      if(rank != 6){
+        bBoard.kingDangerSquares |= (long long int)pow(2,(rank+2) * 8 + file);
+      }
+    }
+  }
+  if(!bBoard.numCheckers){
+    bBoard.checkRay = 0;
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Right
+  while(file != 7 && board[rank][file+1] == 0){
+    squareVal = (long long int)pow(2,(rank) * 8 + file+1);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if(!bBoard.numCheckers){
+      bBoard.checkRay |= squareVal;
+    }
+
+    file++;
+  }
+  if(file != 7  && ((board[rank][file+1] ^ turnColour) > board[rank][file+1])){
+    squareVal = (long long int)pow(2,(rank) * 8 + file+1);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if((squareVal & kingPos) == kingPos){
+      squareVal = (long long int)pow(2,(actualRank) * 8 + actualFile);
+      bBoard.checkers |= squareVal;
+      bBoard.numCheckers++;
+      if(file != 6 && board[rank][file+1] % 8 == 2){
+        bBoard.kingDangerSquares |= (long long int)pow(2,(rank) * 8 + file+2);
+      }
+    }
+  }
+  if(!bBoard.numCheckers){
+    bBoard.checkRay = 0;
+  }
+  file = actualFile;
+  rank = actualRank;
+  //Left
+  while(file != 0 && board[rank][file-1] == 0){
+    squareVal = (long long int)pow(2,(rank) * 8 + file-1);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if(!bBoard.numCheckers){
+      bBoard.checkRay |= squareVal;
+    }
+
+    file--;
+  }
+  if(file != 0  && ((board[rank][file-1] ^ turnColour) > board[rank][file-1])){
+    squareVal = (long long int)pow(2,(rank) * 8 + file-1);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+    if((squareVal & kingPos) == kingPos){
+      squareVal = (long long int)pow(2,(actualRank) * 8 + actualFile);
+      bBoard.checkers |= squareVal;
+      bBoard.numCheckers++;
+      if(file != 1 && board[rank][file-1] % 8 == 2){
+        bBoard.kingDangerSquares |= (long long int)pow(2,(rank) * 8 + file-2);
+      }
+    }
+  }
+  if(!bBoard.numCheckers){
+    bBoard.checkRay = 0;
+  }
+  turnColour = currTurnColour;
+}
+void queenMoves(int rank,int file, int** board ,long long int kingPos,BitBoard& bBoard){
+  rookMoves(rank,file,board,kingPos,bBoard);
+  bishopMoves(rank,file,board,kingPos,bBoard);
+}
+void kingMoves(int rank,int file, int** board ,long long int kingPos,BitBoard& bBoard){
+  auto currTurnColour = turnColour;
+  if(board[rank][file] > 16){
+    turnColour = white;
+  }
+  else{
+    turnColour = black;
+  }
+  long long int squareVal;
+  //Up
+  if(rank != 0  && ((board[rank-1][file] ^ turnColour) > board[rank-1][file])){
+    squareVal = (long long int)pow(2,(rank-1) * 8 + file);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+  }
+  //Down
+  if(rank != 7  && ((board[rank+1][file] ^ turnColour) > board[rank+1][file])){
+    squareVal = (long long int)pow(2,(rank+1) * 8 + file);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+  }
+  //Right
+  if(file != 7  && ((board[rank][file+1] ^ turnColour) > board[rank][file+1])){
+    squareVal = (long long int)pow(2,(rank) * 8 + file+1);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+  }
+  //Left
+  if(rank != 7  && ((board[rank][file-1] ^ turnColour) > board[rank][file-1])){
+    squareVal = (long long int)pow(2,(rank) * 8 + file-1);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+  }
+  //Up-Right
+  if(rank != 0 && file != 7 && ((board[rank-1][file+1] ^ turnColour) > board[rank-1][file+1])){
+    squareVal = (long long int)pow(2,(rank-1) * 8 + file+1);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+  }
+  //Down-Right
+  if(rank != 7 && file != 7 && ((board[rank+1][file+1] ^ turnColour) > board[rank+1][file+1])){
+    squareVal = (long long int)pow(2,(rank+1) * 8 + file+1);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+  }
+  //Down-Left
+  if(rank != 7 && file != 0 && ((board[rank+1][file-1] ^ turnColour) > board[rank+1][file-1])){
+    squareVal = (long long int)pow(2,(rank+1) * 8 + file-1);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+  }
+  //Up-Left
+  if(rank != 0 && file != 0 && ((board[rank-1][file-1] ^ turnColour) > board[rank-1][file-1])){
+    squareVal = (long long int)pow(2,(rank-1) * 8 + file-1);
+    bBoard.attackingSquares |= squareVal;
+    bBoard.kingDangerSquares |= squareVal;
+  }
+  turnColour = currTurnColour;
+}
+
 std::vector<array<int,2>> bishopTurn(int rank, int file, int** board){
   auto currTurnColour = turnColour;
   if(board[rank][file] > 16){
@@ -2597,6 +3558,32 @@ std::vector<array<int,2>> pieceMoves(int rank, int file, int** board, Board myBo
   }
 }
 */
+
+void oppAttackingMoves(int rank,int file, int** board ,long long int kingPos,BitBoard& bBoard){
+  if(board[rank][file] % 8 == 1){
+    pawnMoves(rank,file,board,kingPos,bBoard);
+  }
+  else if(board[rank][file] % 8 == 2){
+    kingMoves(rank,file,board,kingPos,bBoard);
+  }
+  else if(board[rank][file] % 8 == 3){
+    knightMoves(rank,file,board,kingPos,bBoard);
+  }
+  else if(board[rank][file] % 8 == 4){
+    bishopMoves(rank,file,board,kingPos,bBoard);
+  }
+  else if(board[rank][file] % 8 == 5){
+    rookMoves(rank,file,board,kingPos,bBoard);
+  }
+  else if(board[rank][file] % 8 == 6){
+    queenMoves(rank,file,board,kingPos,bBoard);
+  }
+  else{
+    cout << "pieceMoves" << endl;
+    sleep(99999);
+  }
+}
+
 bool newMoveResultsInCheck(Board myBoard){
   int newTurnColour;
   array<int,2> kingPosition;
@@ -2866,6 +3853,37 @@ array<int,2> kingPos(Board myBoard){
   }
 }
 int maxMoves = 0;
+
+BitBoard oppAttackingSquares(int** board, Board myBoard){
+  int initTurnColour = turnColour;
+  BitBoard result;
+  result.attackingSquares = 0;
+  result.kingDangerSquares = 0;
+  result.checkers = 0;
+  result.checkRay = 0;
+  result.numCheckers = 0;
+  array<PieceList,6> pieces;
+  long long int kingPos;
+  if(turnColour == white){
+    pieces = myBoard.getBlackPieces();
+    kingPos = posToBitBoard(myBoard.getWhitePieces()[5].getOccupiedSquares()[0]);
+    turnColour = black;
+  }
+  else{
+    pieces = myBoard.getWhitePieces();
+    kingPos = posToBitBoard(myBoard.getBlackPieces()[5].getOccupiedSquares()[0]);
+    turnColour = white;
+  }
+  for(int k = 0; k < 6; k++){
+    array<int,2>* pieceList = pieces[k].getOccupiedSquares();
+    for(int i = 0; i < pieces[k].getSize();i++){
+      oppAttackingMoves(pieceList[i][0], pieceList[i][1], board, kingPos, result);
+    }
+  }
+  turnColour = initTurnColour;
+  return result;
+}
+
 MoveList getMoves(int ** board, Board myBoard){
   //vector<array<int,2>> moves;
   array<int,4> val;
@@ -2884,30 +3902,21 @@ MoveList getMoves(int ** board, Board myBoard){
   MoveList actualResult;
   actualResult.moves = new array<int,4>[218];
   actualResult.size = 0;
+  BitBoard oppBitBoard = oppAttackingSquares(board,myBoard);
+  if(oppBitBoard.numCheckers == 2){
+
+  }
   totalMem++;
   int index = 0;
   for(int k = 0; k < 6; k++){
     array<int,2>* pieceList = pieces[k].getOccupiedSquares();
     for(int i = 0; i < pieces[k].getSize();i++){
       pieceMove(pieceList[i][0], pieceList[i][1], board, myBoard, index, actualResult);
-      //cout << index << endl;
-      /*
-      MoveList moves = pieceMoves(pieceList[i][0], pieceList[i][1], board, myBoard);
-      result[index] = moves;
-      actualResult[index] = moves;
-      index++;
-      */
     }
   }
   actualResult.size = index;
   maxMoves = max(maxMoves,index);
-  /*
-  MoveList endMoveList;
-  endMoveList.size = -1;
-  actualResult[numPieces] = endMoveList;
-  */
 
-  //cout << "done result" << endl;
   return actualResult;
 
 }
@@ -3964,7 +4973,7 @@ int main(){
 
     cout << "done board" << endl;
 
-    const string startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    const string startFen = "8/8/8/1k6/3Pp4/8/K7/8 w KQkq - 0 1";
     loadBoardFromFen(startFen, board, myBoard);
 
     for(int i = 0; i < 8; i++){
@@ -4025,12 +5034,39 @@ int main(){
     adder(x);
     cout << x << endl;
     */
+    /*
     int result = MoveGenerator(6, myBoard);
     cout << result << endl;
     cout << totalMem << endl;
     cout << maxMoves << endl;
+    */
+    MoveList actualResult;
+    actualResult.moves = new array<int,4>[218];
+    actualResult.size = 0;
+    cout << "turnColour " << turnColour <<  endl;
+    BitBoard result = oppAttackingSquares(board,myBoard);
+    cout << "turnColour " << turnColour <<  endl;
+    //int** kingDanger = initBoard(result.kingDangerSquares);
+    cout << "attacking squares" << endl;
+    bitBoardPrinter(result.attackingSquares);
+    cout << "king danger squares" << endl;
+    bitBoardPrinter(result.kingDangerSquares);
+    cout << "checkers" << endl;
+    bitBoardPrinter(result.checkers);
+    cout << "checkRay" << endl;
+    bitBoardPrinter(result.checkRay);
+    cout << result.numCheckers << endl;
+    int index = 0;
+    //kingMovesCheck(7, 0, board, index, actualResult, result.kingDangerSquares);
+    pawnMovesCheck(4, 4, board, index, actualResult, result.checkers, result.checkRay, true);
+    for(int i = 0; i < index;i++){
+      cout << actualResult.moves[i][2] << " " << actualResult.moves[i][3] << endl;
+    }
+
+    //bitBoardPrinter((long long int) 257);
     /*
     array<int,5> result = Search(7,myBoard, -numeric_limits<int>::max(),numeric_limits<int>::max(),h);
+
 
     cout << "Piece is: " << result[0] << " " << result[1] << endl;
     cout << "Move is: " << result[2] << " " << result[3] << endl;
@@ -4043,5 +5079,4 @@ int main(){
     printf ("time: %0.8f sec\n", ((float) end - start)/CLOCKS_PER_SEC);
 
     return 0;
-  return 0;
 }
